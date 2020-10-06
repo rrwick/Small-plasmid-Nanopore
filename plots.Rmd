@@ -1,0 +1,526 @@
+---
+title: "Small plasmid analysis"
+date: "2020-10-02"
+author: "Ryan Wick"
+output:
+  html_document:
+    pandoc_args: ["+RTS", "-K64m", "-RTS", "--self-contained",]
+    df_print: paged
+    keep_md: false
+    toc: true
+    toc_float: true
+---
+
+This document contains the R code used to generate data and plots for my paper comparing rapid and ligation kits in the context of genomes with small plasmids.
+
+It takes as input:
+
+* `table_s1.xlsx` - assumed to be in the same directory as this file.
+* Four TSV files of read-level information, assumed to be in a `../data` directory:
+  * `tech_rep_1_ligation_reads.tsv.gz`
+  * `tech_rep_1_rapid_reads.tsv.gz`
+  * `tech_rep_2_ligation_reads.tsv.gz`
+  * `tech_rep_2_rapid_reads.tsv.gz`
+* One TSV file of sliding-window GC and depth values: `gc_and_depth.tsv.gz`
+
+This script is licensed under a Creative Commons Attribution 4.0 International License. You should have received a copy of the license along with this work. If not, see <http://creativecommons.org/licenses/by/4.0/>.
+
+
+
+
+## Setup
+
+```{r}
+library(tidyverse)
+library(knitr)
+library(readxl)
+library(cowplot)
+library(ggrastr)
+```
+
+Output settings:
+```{r}
+opts_chunk$set(fig.width=8, fig.height=5, dpi=300, fig.path='../plots/', echo=TRUE, dev=c('png','pdf'), warning=FALSE, message=FALSE)
+pdf.options(useDingbats = FALSE)
+```
+
+
+
+
+## Load data
+
+```{r}
+barcode_data <- read_excel("table_s1.xlsx", sheet = "Per-barcode", col_names = TRUE)
+barcode_data$`Barcode number` <- factor(barcode_data$`Barcode number`, levels = barcode_data$`Barcode number`)
+
+replicon_data <- read_excel("table_s1.xlsx", sheet = "Per-replicon", col_names = TRUE)
+run_data <- read_excel("table_s1.xlsx", sheet = "Per-run", col_names = TRUE)
+
+load_read_data <- function(filename) {
+  reads <- read_delim(filename, "\t", escape_double = FALSE, trim_ws = TRUE)
+  reads$mean_identity <- as.numeric(sub("%", "", reads$mean_identity)) / 100.0
+  reads$read_coverage <- as.numeric(sub("%", "", reads$read_coverage)) / 100.0
+  reads$translocation_speed <- reads$read_length / reads$template_duration
+  reads$start_time_hours <- reads$start_time / 3600
+  return(reads)
+}
+
+tech_rep_1_ligation_reads <- load_read_data("../data/tech_rep_1_ligation_reads.tsv.gz")
+tech_rep_1_rapid_reads <- load_read_data("../data/tech_rep_1_rapid_reads.tsv.gz")
+tech_rep_2_ligation_reads <- load_read_data("../data/tech_rep_2_ligation_reads.tsv.gz")
+tech_rep_2_rapid_reads <- load_read_data("../data/tech_rep_2_rapid_reads.tsv.gz")
+
+gc_depth <- read_delim("../data/gc_and_depth.tsv.gz", "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+
+
+
+## Yield
+
+Here are the full yields:
+```{r}
+sum(tech_rep_1_ligation_reads$read_length, na.rm = TRUE)
+sum(tech_rep_2_ligation_reads$read_length, na.rm = TRUE)
+sum(tech_rep_1_rapid_reads$read_length, na.rm = TRUE)
+sum(tech_rep_2_rapid_reads$read_length, na.rm = TRUE)
+```
+
+Not all runs went for the same amount of time, and some were refueled, which makes it harder to compare yields. So here are yields up to the 12-hour point (before any refueling took place):
+```{r}
+yield_before_hour <- function(read_table, hour_cutoff) {
+  read_table %>% filter(start_time_hours < hour_cutoff) -> read_table
+  return(sum(read_table$read_length))
+}
+```
+
+```{r}
+yield_before_hour(tech_rep_1_ligation_reads, 12)
+yield_before_hour(tech_rep_2_ligation_reads, 12)
+yield_before_hour(tech_rep_1_rapid_reads, 12)
+yield_before_hour(tech_rep_2_rapid_reads, 12)
+```
+
+
+
+
+
+## Demultiplexing
+
+```{r}
+incorrect_demux_percent <- function(read_table) {
+  
+  # Filter out reads where the reference is the plasmid found in two genomes, as these are unreliable for demultiplexing.
+  read_table = filter(read_table, reference_names != "Haemophilus_unknown_M1C132_1__plasmid_3")
+  read_table = filter(read_table, reference_names != "Klebsiella_oxytoca_MSB1_2C__plasmid_3")
+
+  correct <- sum(read_table$demultiplex_status == 'correct', na.rm = TRUE)
+  incorrect <- sum(read_table$demultiplex_status == 'incorrect', na.rm = TRUE)
+  
+  incorrect_unused <- sum(read_table$demultiplex_status == 'incorrect' &
+                          (read_table$barcode_arrangement == 'barcode06' |
+                           read_table$barcode_arrangement == 'barcode09' |
+                           read_table$barcode_arrangement == 'barcode10' |
+                           read_table$barcode_arrangement == 'barcode11' |
+                           read_table$barcode_arrangement == 'barcode12'), na.rm = TRUE)
+  
+  incorrect_used <- sum(read_table$demultiplex_status == 'incorrect' &
+                        (read_table$barcode_arrangement == 'barcode01' |
+                         read_table$barcode_arrangement == 'barcode02' |
+                         read_table$barcode_arrangement == 'barcode03' |
+                         read_table$barcode_arrangement == 'barcode04' |
+                         read_table$barcode_arrangement == 'barcode05' |
+                         read_table$barcode_arrangement == 'barcode07' |
+                         read_table$barcode_arrangement == 'barcode08'), na.rm = TRUE)
+  
+  total <- correct + incorrect
+  return(c(100.0 * incorrect_unused / total,
+           100.0 * incorrect_used / total,
+           100.0 * incorrect / total))
+}
+```
+
+```{r}
+incorrect_demux_percent(tech_rep_1_ligation_reads)
+incorrect_demux_percent(tech_rep_2_ligation_reads)
+incorrect_demux_percent(tech_rep_1_rapid_reads)
+incorrect_demux_percent(tech_rep_2_rapid_reads)
+```
+
+I was curious is selecting for high quality reads fixedbad demuxing, so I tried creating high quality subsets based on `barcode_score`, `mean_qscore_template` and `mean_identity`. However, none of these reliably resulted in a significant improvement.
+
+
+
+
+
+## Chimeras
+
+```{r}
+chimera_percent <- function(read_table) {
+  total <- dim(read_table)[1]
+  
+  all_chimeras <- sum(read_table$chimera == 'yes', na.rm = TRUE)
+  all_chimeras_percent <- 100.0 * all_chimeras / total
+  
+  within_bin_chimeras <- sum(read_table$within_bin_chimera == 'yes', na.rm = TRUE)
+  within_bin_chimeras_percent <- 100.0 * within_bin_chimeras / total
+  
+  cross_bin_chimeras <- sum(read_table$cross_bin_chimera == 'yes', na.rm = TRUE)
+  cross_bin_chimeras_percent <- 100.0 * cross_bin_chimeras / total
+  
+  return(c(within_bin_chimeras_percent,
+           cross_bin_chimeras_percent,
+           all_chimeras_percent))
+}
+```
+
+```{r}
+chimera_percent(tech_rep_1_ligation_reads)
+chimera_percent(tech_rep_2_ligation_reads)
+chimera_percent(tech_rep_1_rapid_reads)
+chimera_percent(tech_rep_2_rapid_reads)
+```
+
+
+
+
+## ONT vs Illumina read depth
+
+This is the paper's main-text figure, comparing Illumina and ONT read depth for plasmids.
+
+```{r ont_vs_illumina_depth, fig.width = 8, fig.height = 3.75, useDingbats = FALSE}
+# https://stackoverflow.com/a/13451587/2438989
+r_squared_text = function(m) {
+  l <- list(r2 = format(summary(m)$r.squared, digits = 3));
+  eq <- substitute(italic(r)^2~"="~r2, l)
+  as.character(as.expression(eq));                 
+}
+
+ont_vs_illumina_depth <- function(replicon_data, column_name, plot_title, y_title, point_colour, line_colour, line_fill_colour, regression) {
+  column_name <- sym(column_name)
+
+  replicon_data$size_category <- ifelse(replicon_data$Size >=20000, "big (≥20 kbp)", "small (<20 kbp)")
+  # replicon_data = filter(replicon_data, Size < 20000)
+  
+  p <- ggplot(replicon_data, aes(x=`Illumina read depth (normalised to chromosome)`, y=!!column_name)) +
+    geom_abline(linetype = "dashed", colour = "#CCCCCC") +
+    geom_smooth(method='lm', colour=line_colour, fill=line_fill_colour, size=0.5, se = FALSE) +
+    geom_point(colour = point_colour, aes(shape=size_category)) +
+    annotate("text", x = 3.2, y = 320, label = r_squared_text(regression), parse = TRUE, colour=line_colour) +
+    theme_bw() + theme(plot.background = element_blank(), legend.position = "none") +
+    scale_x_log10(breaks = c(0.1, 1, 10, 100, 1000), labels = c("0.1", "1", "10", "100", "1000"), minor_breaks = NULL, expand = c(0, 0)) +
+    scale_y_log10(breaks = c(0.1, 1, 10, 100, 1000), labels = c("0.1", "1", "10", "100", "1000"), minor_breaks = NULL, expand = c(0, 0)) +
+    coord_fixed(xlim = c(0.1, 1000), ylim = c(0.1, 1000)) +
+    labs(x = "Illumina read depth", y = y_title, title = plot_title)
+}
+
+replicon_data_no_chromosome <- filter(replicon_data, Replicon != "chromosome")
+replicon_data_no_chromosome$ligation_log_depth <- log10(replicon_data_no_chromosome$`ONT ligation read depth (normalised to chromosome)`)
+replicon_data_no_chromosome$rapid_log_depth <- log10(replicon_data_no_chromosome$`ONT rapid read depth (normalised to chromosome)`)
+replicon_data_no_chromosome$illumina_log_depth <- log10(replicon_data_no_chromosome$`Illumina read depth (normalised to chromosome)`)
+
+# Log-based regressions
+ligation_to_illumina <- lm(ligation_log_depth ~ illumina_log_depth, data=replicon_data_no_chromosome)
+rapid_to_illumina <- lm(rapid_log_depth ~ illumina_log_depth, data=replicon_data_no_chromosome)
+rapid_to_ligation <- lm(rapid_log_depth ~ ligation_log_depth, data=replicon_data_no_chromosome)
+
+summary(ligation_to_illumina)
+summary(rapid_to_illumina)
+
+p1 <- ont_vs_illumina_depth(replicon_data_no_chromosome, "ONT ligation read depth (normalised to chromosome)",
+                            "Oxford Nanopore vs Illumina sequencing read depths for plasmids\n",
+                            "ONT ligation read depth", "#CB4D42", "#760000", "#FFD7D5", ligation_to_illumina)
+p2 <- ont_vs_illumina_depth(replicon_data_no_chromosome, "ONT rapid read depth (normalised to chromosome)",
+                            "", "ONT rapid read depth", "#00989D", "#00555A", "#B3EDEF", rapid_to_illumina)
+
+plot_grid(p1, p2, ncol = 2, align="hv")
+```
+
+I did experiment with using GC-corrected Illumina depths, i.e. adjusting the Illumina depths to compensate for the GC bias of that platform. But it only made a tiny insignificant difference (and complicated the method) so I opted against it.
+
+
+
+
+
+## Barcode distributions
+
+```{r barcode_yields, fig.width = 8, fig.height = 8, useDingbats = FALSE}
+barcode_distribution <- function(barcode_data, column_name, plot_title, fill_colour, max_y) {
+  column_name <- sym(column_name)
+  wrong_colour = "#999999"
+  unclassified_colour = "#666666"
+  
+  p <- ggplot(barcode_data) +
+    geom_bar(aes(x=`Barcode number`, y=!!column_name, fill=`Barcode number`), stat = "identity") +
+    theme_bw() + theme(plot.background = element_blank()) +
+    scale_fill_manual(values = c("1" = fill_colour, "2" = fill_colour, "3" = fill_colour,
+                                 "4" = fill_colour, "5" = fill_colour, "6" = wrong_colour,
+                                 "7" = fill_colour, "8" = fill_colour, "9" = wrong_colour,
+                                 "10" = wrong_colour, "11" = wrong_colour, "12" = wrong_colour,
+                                 "unclassified" = unclassified_colour)) +
+    guides(fill = FALSE) +
+    scale_y_log10(breaks = c(1, 10, 100, 1000, 10000, 100000, 1000000, 10000000),
+                  labels = c(bquote(10^0), bquote(10^1), bquote(10^2), bquote(10^3), bquote(10^4), bquote(10^5), bquote(10^6), bquote(10^7)),
+                  minor_breaks = NULL,
+                  expand = c(0, 0)) +
+    coord_cartesian(ylim = c(1, max_y)) +
+    labs(x = "Barcode", y = "Read count", title = plot_title)
+}
+
+
+p1 <- barcode_distribution(barcode_data, "Ligation (run 1) read count", "Ligation (run 1)", "#CB4D42", 10000000)
+p2 <- barcode_distribution(barcode_data, "Ligation (run 2) read count", "Ligation (run 2)", "#CB4D42", 10000000)
+p3 <- barcode_distribution(barcode_data, "Rapid (run 1) read count", "Rapid (run 1)", "#00989D", 10000000)
+p4 <- barcode_distribution(barcode_data, "Rapid (run 2) read count", "Rapid (run 2)", "#00989D", 10000000)
+
+plot_grid(p1, p2, p3, p4, ncol = 1, align="hv")
+```
+
+
+
+
+
+## Barcode N50s
+
+```{r barcode_n50s, fig.width = 8, fig.height = 5, useDingbats = FALSE}
+barcode_n50s <- function(barcode_data, column_name, plot_title, fill_colour, max_y) {
+  barcode_data_real_barcodes <- filter(barcode_data, `Barcode number` != "6" & `Barcode number` != "9" &
+                                                     `Barcode number` != "10" & `Barcode number` != "11" &
+                                                     `Barcode number` != "12" & `Barcode number` != "unclassified")
+
+  column_name <- sym(column_name)
+  wrong_colour = "#999999"
+  unclassified_colour = "#666666"
+  
+  p <- ggplot(barcode_data_real_barcodes) +
+    geom_bar(aes(x=`Barcode number`, y=!!column_name, fill=`Barcode number`), stat = "identity") +
+    theme_bw() + theme(plot.background = element_blank()) +
+    scale_fill_manual(values = c("1" = fill_colour, "2" = fill_colour, "3" = fill_colour,
+                                 "4" = fill_colour, "5" = fill_colour, "6" = wrong_colour,
+                                 "7" = fill_colour, "8" = fill_colour, "9" = wrong_colour,
+                                 "10" = wrong_colour, "11" = wrong_colour, "12" = wrong_colour,
+                                 "unclassified" = unclassified_colour)) +
+    guides(fill = FALSE) +
+    scale_y_continuous(expand = c(0, 0), breaks = c(0, 10000, 20000, 30000), labels = c("0", "10k", "20k", "30k")) + 
+    coord_cartesian(ylim = c(0, max_y)) +
+    labs(x = "Barcode", y = "Read N50", title = plot_title)
+}
+
+
+p1 <- barcode_n50s(barcode_data, "Ligation (run 1) read N50", "Ligation (run 1)", "#CB4D42", 30000)
+p2 <- barcode_n50s(barcode_data, "Ligation (run 2) read N50", "Ligation (run 2)", "#CB4D42", 30000)
+p3 <- barcode_n50s(barcode_data, "Rapid (run 1) read N50", "Rapid (run 1)", "#00989D", 30000)
+p4 <- barcode_n50s(barcode_data, "Rapid (run 2) read N50", "Rapid (run 2)", "#00989D", 30000)
+
+plot_grid(p1, p2, p3, p4, ncol = 2, align="hv")
+```
+
+
+
+
+## Read identity distributions
+
+```{r identity_distributions, fig.width = 8, fig.height = 8, useDingbats = FALSE}
+identity_distribution <- function(read_table, plot_title, fill_colour, line_colour) {
+  read_table %>% filter(mean_identity > 0.5) -> read_table
+  read_table %>% filter(read_length > 10000) -> read_table
+  read_table %>% filter(read_coverage > 0.9) -> read_table
+  
+  # Optionally, filter for reads with a good translocation speed.
+  # read_table %>% filter(translocation_speed > 380) -> read_table
+  # read_table %>% filter(translocation_speed < 400) -> read_table
+  
+  median_identity <- median(read_table$mean_identity)
+  
+  p <- ggplot(read_table) +
+    geom_density(aes(x = mean_identity, y = ..scaled..), bw = 0.0025, fill = fill_colour, colour = NA) +
+    geom_vline(aes(xintercept = median_identity), alpha = 0.75, linetype = "dashed", colour = line_colour) + 
+    theme_bw() +  theme(plot.background = element_blank()) +
+    coord_cartesian(xlim = c(0.85, 1.0), ylim = c(0, 1.1)) +
+    scale_x_continuous(breaks = seq(0.85, 1, 0.01),
+                       labels = paste(seq(85, 100, 1), "%", sep = ""),
+                       expand = c(0.002, 0.002)) +
+    scale_y_continuous(breaks = NULL, expand = c(0, 0)) +
+    labs(title = plot_title, x = "read identity", y = NULL)
+  
+  return(p)
+}
+
+p1 <- identity_distribution(tech_rep_1_ligation_reads, "Ligation (run 1)", "#F8766D", "#760000")
+p2 <- identity_distribution(tech_rep_2_ligation_reads, "Ligation (run 2)", "#F8766D", "#760000")
+p3 <- identity_distribution(tech_rep_1_rapid_reads, "Rapid (run 1)", "#00BFC4", "#00555A")
+p4 <- identity_distribution(tech_rep_2_rapid_reads, "Rapid (run 2)", "#00BFC4", "#00555A")
+
+plot_grid(p1, p2, p3, p4, ncol = 1, align="hv")
+```
+
+
+
+
+## Translocation speed distributions
+
+```{r translocation_speed_distributions, fig.width = 8, fig.height = 8, useDingbats = FALSE}
+translocation_speed_distribution <- function(read_table, plot_title, fill_colour) {
+  read_table %>% filter(mean_identity > 0.5) -> read_table
+  read_table %>% filter(read_length > 10000) -> read_table
+  
+  p <- ggplot(read_table, aes(translocation_speed)) +
+    geom_density(fill = fill_colour, colour = NA) +
+    theme_bw() + theme(plot.background = element_blank()) +
+    coord_cartesian(xlim = c(0, 600)) +
+    scale_x_continuous(breaks = seq(0, 600, 100),
+                       expand = c(0.02, 0.02)) +
+    scale_y_continuous(breaks = NULL) +
+    labs(title = plot_title, x = NULL, y = NULL)
+  
+  return(p)
+}
+
+p1 <- translocation_speed_distribution(tech_rep_1_ligation_reads, "Ligation 1 translocation speed", "#F8766D")
+p2 <- translocation_speed_distribution(tech_rep_2_ligation_reads, "Ligation 2 translocation speed", "#F8766D")
+p3 <- translocation_speed_distribution(tech_rep_1_rapid_reads, "Rapid 3 translocation speed", "#00BFC4")
+p4 <- translocation_speed_distribution(tech_rep_2_rapid_reads, "Rapid 4 translocation speed", "#00BFC4")
+
+plot_grid(p1, p2, p3, p4, ncol = 1, align="hv")
+```
+
+
+
+
+## Identity vs translocation speed
+
+```{r identity_vs_translocation_speed_plots, fig.width = 8, fig.height = 8, useDingbats = FALSE}
+identity_vs_translocation_speed <- function(read_table, plot_title, point_colour) {
+  read_table %>% filter(mean_identity > 0.5) -> read_table
+  read_table %>% filter(read_length > 10000) -> read_table
+  
+  read_table <- read_table[0:50000,]  # so we don't have too many points
+
+  p <- ggplot(read_table) +
+    rasterise(geom_point(aes(x=translocation_speed, y=mean_identity), colour=point_colour, alpha=0.15, shape=16, size=0.5), dpi=600) +
+    theme_bw() + theme(plot.background = element_blank()) +
+    scale_y_continuous(breaks = seq(0.9, 1, 0.02),
+                       labels = paste(seq(90, 100, 2), "%", sep = "")) +
+    scale_x_continuous(breaks = seq(0, 600, 100)) +
+    coord_cartesian(xlim = c(0, 600), ylim = c(0.9, 1)) +
+    labs(title = plot_title, x = "translocation speed", y = "identity")
+  
+  return(p)
+}
+
+p1 <- identity_vs_translocation_speed(tech_rep_1_ligation_reads, "Ligation (run 1)", "#CB4D42")
+p2 <- identity_vs_translocation_speed(tech_rep_2_ligation_reads, "Ligation (run 2)", "#CB4D42")
+p3 <- identity_vs_translocation_speed(tech_rep_1_rapid_reads, "Rapid (run 1)", "#00989D")
+p4 <- identity_vs_translocation_speed(tech_rep_2_rapid_reads, "Rapid (run 2)", "#00989D")
+
+plot_grid(p1, p2, p3, p4, ncol = 2, align="hv")
+```
+
+
+
+
+## Identity vs read time
+
+```{r identity_vs_read_time_plots, fig.width = 8, fig.height = 8, useDingbats = FALSE}
+max_time <- 24
+
+identity_vs_start_time <- function(read_table, plot_title, point_colour) {
+  read_table %>% filter(start_time_hours < max_time) -> read_table
+  read_table %>% filter(mean_identity > 0.5) -> read_table
+  read_table %>% filter(read_length > 10000) -> read_table
+  
+  read_table <- read_table[0:50000,]  # so we don't have too many points
+
+  p <- ggplot(read_table) +
+    rasterise(geom_point(aes(x=start_time_hours, y=mean_identity), colour=point_colour, alpha=0.15, shape=16, size=0.5), dpi=600) +
+    theme_bw() + theme(plot.background = element_blank()) +
+    scale_y_continuous(breaks = seq(0.9, 1, 0.02),
+                       labels = paste(seq(90, 100, 2), "%", sep = "")) +
+    scale_x_continuous(breaks = seq(0, max_time, 6),
+                       expand = c(0, 0)) +
+    coord_cartesian(xlim = c(0, max_time), ylim = c(0.9, 1)) +
+    labs(title = plot_title, x = "read time (hours)", y = "identity")
+  
+  return(p)
+}
+
+p1 <- identity_vs_start_time(tech_rep_1_ligation_reads, "Ligation (run 1)", "#CB4D42")
+p2 <- identity_vs_start_time(tech_rep_2_ligation_reads, "Ligation (run 2)", "#CB4D42")
+p3 <- identity_vs_start_time(tech_rep_1_rapid_reads, "Rapid (run 1)", "#00989D")
+p4 <- identity_vs_start_time(tech_rep_2_rapid_reads, "Rapid (run 2)", "#00989D")
+
+plot_grid(p1, p2, p3, p4, ncol = 2, align="hv")
+```
+
+
+
+
+## Translocation speed vs read time
+
+Trying the same idea as the previous one, but now with the read's start time.
+
+```{r translocation_speed_vs_read_time_plots, fig.width = 8, fig.height = 8, useDingbats = FALSE}
+max_time <- 24
+
+translocation_speed_vs_start_time <- function(read_table, plot_title, point_colour) {
+  read_table %>% filter(start_time_hours < max_time) -> read_table
+  read_table %>% filter(mean_identity > 0.5) -> read_table
+  read_table %>% filter(read_length > 10000) -> read_table
+  
+  read_table <- read_table[0:50000,]  # so we don't have too many points
+
+  p <- ggplot(read_table) +
+    rasterise(geom_point(aes(x=start_time_hours, y=translocation_speed), colour=point_colour, alpha=0.15, shape=16, size=0.25), dpi=600) +
+    theme_bw() + theme(plot.background = element_blank()) +
+    scale_y_continuous(breaks = seq(0, 600, 100)) +
+    scale_x_continuous(breaks = seq(0, max_time, 6),
+                       expand = c(0, 0)) +
+    coord_cartesian(xlim = c(0, max_time), ylim = c(0, 600)) +
+    labs(title = plot_title, x = "read time (hours)", y = "translocation speed")
+  
+  return(p)
+}
+
+p1 <- translocation_speed_vs_start_time(tech_rep_1_ligation_reads, "Ligation (run 1)", "#CB4D42")
+p2 <- translocation_speed_vs_start_time(tech_rep_2_ligation_reads, "Ligation (run 2)", "#CB4D42")
+p3 <- translocation_speed_vs_start_time(tech_rep_1_rapid_reads, "Rapid (run 1)", "#00989D")
+p4 <- translocation_speed_vs_start_time(tech_rep_2_rapid_reads, "Rapid (run 2)", "#00989D")
+
+plot_grid(p1, p2, p3, p4, ncol = 2, align="hv")
+```
+
+
+
+
+## Illumina GC bias
+
+```{r illumina_gc_plot, fig.width = 7, fig.height = 5, useDingbats = FALSE}
+replicon_data %>% filter(Replicon != "chromosome") -> plasmid_data
+plasmid_gc_values <- data.frame(sort(unique(plasmid_data$GC)) * 100)
+colnames(plasmid_gc_values) <- c("GC")
+
+p1 <- ggplot(plasmid_gc_values, aes(x = GC)) +
+  geom_dotplot(binwidth = 0.5, fill = "#00B0F6", colour = "#0054AA") +
+  theme_bw() +
+  theme(plot.background = element_blank(),
+        axis.text.x=element_blank(), axis.ticks.x=element_blank(), panel.border = element_blank(),
+        axis.title.y = element_text(colour = "#0054AA"),
+        plot.margin = margin(0, 0, 0, 0)) +
+  labs(title = "Illumina GC bias", x = NULL, y = "plasmids") +
+  scale_x_continuous(breaks = NULL, expand = c(0, 0)) +
+  scale_y_continuous(breaks = NULL) +
+  coord_cartesian(xlim = c(28.2, 71.8))
+
+p2 <- ggplot(gc_depth, aes(x=gc, y=depth)) +
+  rasterise(geom_point(colour="#6FA100", alpha=0.2, shape=16, size=0.3), dpi=600) +
+  geom_smooth(method="loess", colour="#235400", size=0.75, se = FALSE, fullrange = TRUE) +
+  theme_bw() +
+  theme(plot.background = element_blank(),
+        plot.margin = margin(0, 0, 0, 0)) +
+  scale_x_continuous(breaks = seq(0, 100, 5), expand = c(0, 0)) +
+  scale_y_continuous(breaks = seq(0, 2, 0.1), expand = c(0, 0)) +
+  coord_cartesian(xlim = c(28.2, 71.8), ylim = c(0.5, 1.5)) +
+  labs(x = "GC content (%)", y = "Relative read depth")
+
+plot_grid(p1, p2, ncol = 1, rel_heights = c(1, 4), align="hv")
+```
