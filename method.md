@@ -1,8 +1,9 @@
+I did this analysis on my Nectar instance, which is running Ubuntu 18.04.
+
+
 # Reference genome assembly
 
 ## Prep files
-
-I did this on my Nectar instance.
 
 Make some directories:
 ```bash
@@ -20,7 +21,7 @@ mkdir ~/small_plasmids/tech_rep_1/illumina/barcode07 ~/small_plasmids/tech_rep_2
 mkdir ~/small_plasmids/tech_rep_1/illumina/barcode08 ~/small_plasmids/tech_rep_2/illumina/barcode08
 ```
 
-Transfer Nanopore reads:
+Transfer Nanopore reads from MASSIVE:
 ```bash
 cd ~/small_plasmids/tech_rep_1/rapid
 scp rwic0002@m3-dtn1.massive.org.au:"/mnt/vault2_holt/vault/instruments/minion/2020-01-16_plasmid_rapid/fastq/barcode0*.fastq.gz" .
@@ -39,7 +40,7 @@ scp rwic0002@m3-dtn1.massive.org.au:"/mnt/vault2_holt/vault/instruments/minion/2
 rm barcode06.fastq.gz barcode09.fastq.gz
 ```
 
-Transfer Illumina reads:
+Transfer Illumina reads from MASSIVE:
 ```bash
 cd ~/small_plasmids/tech_rep_1/illumina/barcode01
 scp rwic0002@m3-dtn1.massive.org.au:"/mnt/vault2_holt/vault/instruments/other_illumina/NextSeq_ACBD_200217_Klebs_colistin_small_plasmids/FASTQ/plasmids-J9*.fastq.gz" .
@@ -97,7 +98,7 @@ for d in ~/small_plasmids/tech_rep_2/illumina/barcode*; do
 done
 ```
 
-Unzip and pool reads:
+Pool ligation and rapid reads together:
 ```bash
 cd ~/small_plasmids/tech_rep_1/pooled
 for n in 1 2 3 4 5 7 8; do
@@ -308,7 +309,7 @@ mkdir ~/small_plasmids/tech_rep_2/trycycler
 for d in tech_rep_1 tech_rep_2; do
     cd ~/small_plasmids/"$d"/
     for b in 01 02 03 04 05 07 08; do
-        ~/Trycycler/trycycler-runner.py cluster --assemblies assemblies/barcode"$b"_*.fasta --reads filtered_2/barcode"$b".fastq --out_dir trycycler/barcode"$b" --threads 32 &> cluster.out
+        trycycler cluster --assemblies assemblies/barcode"$b"_*.fasta --reads filtered_2/barcode"$b".fastq --out_dir trycycler/barcode"$b" --threads 32 &> cluster.out
         mv cluster.out trycycler/barcode"$b"
     done
 done
@@ -490,100 +491,100 @@ Trycycler reconcile, one cluster at a time:
 ```bash
 cd ~/small_plasmids/tech_rep_1
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode01.fastq --cluster_dir trycycler/barcode01/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode01.fastq --cluster_dir trycycler/barcode01/cluster_002
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode01.fastq --cluster_dir trycycler/barcode01/cluster_003
+trycycler reconcile --reads filtered_2/barcode01.fastq --cluster_dir trycycler/barcode01/cluster_001
+trycycler reconcile --reads filtered_2/barcode01.fastq --cluster_dir trycycler/barcode01/cluster_002
+trycycler reconcile --reads filtered_2/barcode01.fastq --cluster_dir trycycler/barcode01/cluster_003
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode02.fastq --cluster_dir trycycler/barcode02/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode02.fastq --cluster_dir trycycler/barcode02/cluster_002
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode02.fastq --cluster_dir trycycler/barcode02/cluster_003
+trycycler reconcile --reads filtered_2/barcode02.fastq --cluster_dir trycycler/barcode02/cluster_001
+trycycler reconcile --reads filtered_2/barcode02.fastq --cluster_dir trycycler/barcode02/cluster_002
+trycycler reconcile --reads filtered_2/barcode02.fastq --cluster_dir trycycler/barcode02/cluster_003
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_002
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_003
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_004
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_005
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_006
+trycycler reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_001
+trycycler reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_002
+trycycler reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_003
+trycycler reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_004
+trycycler reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_005
+trycycler reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_006
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_002
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_003
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_004
+trycycler reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_001
+trycycler reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_002
+trycycler reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_003
+trycycler reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_004
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_002
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_003
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_004
+trycycler reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_001
+trycycler reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_002
+trycycler reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_003
+trycycler reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_004
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_002
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_003
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_004 --linear
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_005
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_006
+trycycler reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_001
+trycycler reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_002
+trycycler reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_003
+trycycler reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_004 --linear
+trycycler reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_005
+trycycler reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_006
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_004
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_005
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_007_a
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_007_b
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_014
+trycycler reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_001
+trycycler reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_004
+trycycler reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_005
+trycycler reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_007_a
+trycycler reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_007_b
+trycycler reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_014
 
 cd ~/small_plasmids/tech_rep_2
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode01.fastq --cluster_dir trycycler/barcode01/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode01.fastq --cluster_dir trycycler/barcode01/cluster_002
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode01.fastq --cluster_dir trycycler/barcode01/cluster_003
+trycycler reconcile --reads filtered_2/barcode01.fastq --cluster_dir trycycler/barcode01/cluster_001
+trycycler reconcile --reads filtered_2/barcode01.fastq --cluster_dir trycycler/barcode01/cluster_002
+trycycler reconcile --reads filtered_2/barcode01.fastq --cluster_dir trycycler/barcode01/cluster_003
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode02.fastq --cluster_dir trycycler/barcode02/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode02.fastq --cluster_dir trycycler/barcode02/cluster_002
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode02.fastq --cluster_dir trycycler/barcode02/cluster_003
+trycycler reconcile --reads filtered_2/barcode02.fastq --cluster_dir trycycler/barcode02/cluster_001
+trycycler reconcile --reads filtered_2/barcode02.fastq --cluster_dir trycycler/barcode02/cluster_002
+trycycler reconcile --reads filtered_2/barcode02.fastq --cluster_dir trycycler/barcode02/cluster_003
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_002
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_003
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_004
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_005
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_006
+trycycler reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_001
+trycycler reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_002
+trycycler reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_003
+trycycler reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_004
+trycycler reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_005
+trycycler reconcile --reads filtered_2/barcode03.fastq --cluster_dir trycycler/barcode03/cluster_006
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_002
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_003
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_004
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_006
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_007
+trycycler reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_001
+trycycler reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_002
+trycycler reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_003
+trycycler reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_004
+trycycler reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_006
+trycycler reconcile --reads filtered_2/barcode04.fastq --cluster_dir trycycler/barcode04/cluster_007
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_002
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_003
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_004
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_005
+trycycler reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_001
+trycycler reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_002
+trycycler reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_003
+trycycler reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_004
+trycycler reconcile --reads filtered_2/barcode05.fastq --cluster_dir trycycler/barcode05/cluster_005
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_002
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_003
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_004 --linear
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_005
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_006
+trycycler reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_001
+trycycler reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_002
+trycycler reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_003
+trycycler reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_004 --linear
+trycycler reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_005
+trycycler reconcile --reads filtered_2/barcode07.fastq --cluster_dir trycycler/barcode07/cluster_006
 
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_001
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_002
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_003
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_005_a
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_005_b
-~/Trycycler/trycycler-runner.py reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_016
+trycycler reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_001
+trycycler reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_002
+trycycler reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_003
+trycycler reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_005_a
+trycycler reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_005_b
+trycycler reconcile --reads filtered_2/barcode08.fastq --cluster_dir trycycler/barcode08/cluster_016
 ```
 
 Trycycler MSA:
 ```bash
 cd ~/small_plasmids/tech_rep_1
 for d in trycycler/barcode0*/cluster_*; do
-    ~/Trycycler/trycycler-runner.py msa --cluster_dir "$d" --threads 32
+    trycycler msa --cluster_dir "$d" --threads 32
 done
 
 cd ~/small_plasmids/tech_rep_2
 for d in trycycler/barcode0*/cluster_*; do
-    ~/Trycycler/trycycler-runner.py msa --cluster_dir "$d" --threads 32
+    trycycler msa --cluster_dir "$d" --threads 32
 done
 ```
 
@@ -591,12 +592,12 @@ Trycycler partition:
 ```bash
 cd ~/small_plasmids/tech_rep_1
 for b in 01 02 03 04 05 07 08; do
-    ~/Trycycler/trycycler-runner.py partition --reads filtered_2/barcode"$b".fastq --cluster_dirs trycycler/barcode"$b"/cluster_* --threads 32
+    trycycler partition --reads filtered_2/barcode"$b".fastq --cluster_dirs trycycler/barcode"$b"/cluster_* --threads 32
 done
 
 cd ~/small_plasmids/tech_rep_2
 for b in 01 02 03 04 05 07 08; do
-    ~/Trycycler/trycycler-runner.py partition --reads filtered_2/barcode"$b".fastq --cluster_dirs trycycler/barcode"$b"/cluster_* --threads 32
+    trycycler partition --reads filtered_2/barcode"$b".fastq --cluster_dirs trycycler/barcode"$b"/cluster_* --threads 32
 done
 ```
 
@@ -604,12 +605,12 @@ Trycycler consensus:
 ```bash
 cd ~/small_plasmids/tech_rep_1
 for d in trycycler/barcode0*/cluster_*; do
-    ~/Trycycler/trycycler-runner.py consensus --cluster_dir "$d" --threads 32
+    trycycler consensus --cluster_dir "$d" --threads 32
 done
 
 cd ~/small_plasmids/tech_rep_2
 for d in trycycler/barcode0*/cluster_*; do
-    ~/Trycycler/trycycler-runner.py consensus --cluster_dir "$d" --threads 32
+    trycycler consensus --cluster_dir "$d" --threads 32
 done
 ```
 
@@ -753,21 +754,6 @@ rmdir ~/small_plasmids/tech_rep_[12]
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ## Polishing
 
 This was done for each replicate/barcode:
@@ -845,8 +831,8 @@ rm *.bt2 insert_size_test.sam
 
 Pilon polishing:
 ```bash
-insert_min=155
-insert_max=721
+insert_min=157
+insert_max=699
 
 before=assembly
 after=round_1
@@ -916,8 +902,6 @@ seqtk seq polished.fasta > temp.fasta; mv temp.fasta polished.fasta  # remove ne
 
 
 
-
-
 ## Finalising
 
 I then manually finalised each of the assemblies by:
@@ -942,7 +926,7 @@ Barcode 4 was a tricky one!
   * However, when I aligned the long reads to both options, both rep 1 and rep 2 support the longer sequence!
   * I therefore conclude:
     * The longer sequence (39398 bp) is correct and changed rep 2 accordingly.
-    * Illumina coverage sucked over that region (due to low GC) which is why the Illumina graphs (and in one case Pilon) preferred the shorter sequence.
+    * Illumina coverage was low over that region (due to low GC) which is why the Illumina graphs (and in one case Pilon) preferred the shorter sequence.
 * The chromosome had a discrepancy in a repetitve region:
   * It occurred in a 3x repeat (maybe rRNA)
   * Two variants differing by 1 bp: short (TGAGTGAAGC) and long (TGAGTGGAAGC).
@@ -958,7 +942,7 @@ Barcode 5:
     * The first run had the plasmid at 58,382 bp.
     * The second run had a loop in the plasmid, one instance giving 58,382 bp and two instances giving 58,472 bp.
     * The repeat section was pretty high GC (73%)
-  * I'm therefore believing the Trycycler+Pilon assemblies and leaving it at 58,472 bp.
+  * I therefore believe the Trycycler+Pilon assemblies and am leaving it at 58,472 bp.
 * The chromosome had a small (1 bp) difference in a repeat:
     * The Illumina graphs only supported the longer option.
     * Each Trycycler+Pilon assembly had a copy of the longer option.
@@ -1102,11 +1086,17 @@ So my final assemblies were:
   * plasmid_4 length=1934 circular=true
 
 
+
+
+
+
+
+
 # Read characterisation
 
 ## Prep files
 
-Transfer the reads over:
+Transfer the reads over from MASSIVE:
 ```bash
 cd ~/small_plasmids
 mkdir tech_rep_1_ligation_reads
@@ -1132,7 +1122,6 @@ scp rwic0002@m3-dtn1.massive.org.au:"/mnt/vault2_holt/vault/instruments/minion/2
 
 ```
 
-
 Combine them into one file and sort them alphabetically:
 ```bash
 cd ~/small_plasmids/tech_rep_1_ligation_reads
@@ -1152,7 +1141,6 @@ zcat *.fastq.gz | paste - - - - | sort | tr '\t' '\n' | gzip > reads.fastq.gz
 rm barcode*.fastq.gz unclassified.fastq.gz
 ```
 
-
 Sort the sequencing summary files too:
 ```bash
 for d in tech_rep_1_ligation_reads tech_rep_1_rapid_reads tech_rep_2_ligation_reads tech_rep_2_rapid_reads; do
@@ -1165,13 +1153,11 @@ for d in tech_rep_1_ligation_reads tech_rep_1_rapid_reads tech_rep_2_ligation_re
 done
 ```
 
-
 Make a directory for the analysis files:
 ```bash
 cd ~/small_plasmids
 mkdir data
 ```
-
 
 
 
@@ -1201,7 +1187,7 @@ To save some space (and time when loading data into R) I made smaller versions o
 * column 21: barcode_arrangement
 * column 25: barcode_score
 
-One of the runs (tech_rep_2_ligation) was restarted, resulting in two run IDs (d02e7005 and 56548828), each with times starting at zero. I therefore need to shift the times of the reads on the second run (56548828), so I added 5569 seconds to each of those reads (using some awkward awk). This number was 5269 (the highest time on the first run) plus 300 (about 5 minutes between the runs).
+One of the runs (tech_rep_2_ligation) was restarted, resulting in two run IDs (d02e7005 and 56548828), each with times starting at zero. I therefore need to shift the times of the reads on the second run (56548828), so I added 5569 seconds to each of those reads (using some awk). This number was 5269 (the highest time on the first run) plus 300 (about 5 minutes between the runs).
 
 ```bash
 cd ~/small_plasmids
@@ -1218,8 +1204,7 @@ gunzip -c tech_rep_2_rapid_reads/sequencing_summary.txt.gz | cut -f2,7,13,14,15,
 gunzip -c tech_rep_2_rapid_reads/sequencing_summary.txt.gz | cut -f2,7,13,14,15,21,25 | tail -n+2 | sort >> tech_rep_2_rapid_reads/sequencing_summary_small.txt
 ```
 
-
-I then ran my analysis script:
+I then ran my analysis script (PyPy was faster than CPython):
 ```bash
 cd ~/small_plasmids
 pypy3 ~/small_plasmids/scripts/assign_reads.py tech_rep_1_ligation_reads/reads.fastq.gz tech_rep_1_ligation_reads/sequencing_summary_small.txt data/tech_rep_1_ligation_reads.paf.gz | gzip > data/tech_rep_1_ligation_reads.tsv.gz
@@ -1228,8 +1213,7 @@ pypy3 ~/small_plasmids/scripts/assign_reads.py tech_rep_2_ligation_reads/reads.f
 pypy3 ~/small_plasmids/scripts/assign_reads.py tech_rep_2_rapid_reads/reads.fastq.gz tech_rep_2_rapid_reads/sequencing_summary_small.txt data/tech_rep_2_rapid_reads.paf.gz | gzip > data/tech_rep_2_rapid_reads.tsv.gz
 ```
 
-
-Then aligning Illumina reads:
+Then aligned Illumina reads:
 ```bash
 for genome in Acinetobacter_baumannii_J9 Citrobacter_koseri_MINF_9D Enterobacter_kobei_MSB1_1B Haemophilus_unknown_M1C132_1 Klebsiella_oxytoca_MSB1_2C Klebsiella_variicola_INF345 Serratia_marcescens_17-147-1671; do
     a=~/small_plasmids/assemblies/"$genome".fasta
@@ -1257,9 +1241,6 @@ rm ~/small_plasmids/assemblies/*.bt2
 
 
 
-
-
-
 ## Get depths
 
 For Nanopore reads:
@@ -1283,7 +1264,7 @@ for b in tech_rep_2_illumina_reads/*/*.bam; do
 done
 ```
 
-I pasted all of this depth data into the Excel spreadsheet: `data.xlsx`. For plasmids with two versions, I added the depths of the two versions together to get a single depth for that plasmid.
+I put all of this depth data into the Excel spreadsheet: `table_s1.xlsx`. For plasmids with two versions, I added the depths of the two versions together to get a single depth for that plasmid.
 
 Also I got the GC content of the assemblies:
 ```bash
@@ -1294,11 +1275,9 @@ scripts/get_gc.py assemblies
 
 
 
-
 ## Depth vs GC
 
-I wanted to assess whether or not the GC bias in Illumina sequencing might require correction, so 
-
+I wanted to assess whether or not the GC bias in Illumina sequencing might be a problem, so I wrote a script to give depth and GC for all 1 kbp windows in the chromosome:
 ```bash
 cd ~/small_plasmids
 

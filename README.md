@@ -22,12 +22,7 @@ The `method.md` file contains the commands I ran to conduct the analysis.
 
 ### Scripts
 
-The `scripts` directory contains Python scripts used in the analysis:
-* `align_reads.py`: 
-* `assign_reads.py`: 
-* `get_depths.py`: 
-* `get_gc.py`: 
-* `depth_and_gc.py`: 
+The `scripts` directory contains Python scripts used in the analysis: `align_reads.py`, `assign_reads.py`, `get_depths.py`, `get_gc.py` and `depth_and_gc.py`. See the header in each script for more information on how it works, and see the `method.md` file for how I used these to produce the data in the study.
 
 
 
