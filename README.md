@@ -1,5 +1,12 @@
-This repository supplements our paper titled __Ligation vs rapid: recovery of small plasmid sequences from Oxford Nanopore sequencing data__.
+<p align="center"><img src="banner.png" alt="Banner" width="100%"></p>
 
+# Ligation vs rapid: recovery of small plasmid sequences from Oxford Nanopore sequencing data
+
+This repository supplements our paper looking at small plasmid recovery from Oxford Nanopore sequences:
+
+[Wick RR, Judd LM, Wyres KL, Holt KE. Ligation vs rapid: recovery of small plasmid sequences from Oxford Nanopore sequencing data. bioRxiv. 2020; doi:TBA.](https://www.biorxiv.org/content/TBA).
+
+<p align="center"><img src="banner.png" alt="Banner" width="100%"></p>
 
 
 ### Figures
@@ -28,4 +35,4 @@ The `scripts` directory contains Python scripts used in the analysis: `align_rea
 
 ### Data
 
-The `data.xlsx` file contains various stats the run level, barcode level and replicon level. See the first worksheet in the file for more detailed descriptions of the content.
+The `Table_S1.xlsx` file contains various stats at the run level, barcode level and replicon level. See the first worksheet in the file for a more detailed description of the content.
