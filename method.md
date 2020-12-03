@@ -1,4 +1,4 @@
-I did this analysis on my Nectar instance, which is running Ubuntu 18.04.
+This document contains the commands I used for assembly and analysis. I did them on my Nectar instance, which is running Ubuntu 18.04.
 
 
 # Reference genome assembly
@@ -201,7 +201,7 @@ done
 
 These were the read sets after filtering:
 ```
-filename                               seq_count  total_length   n99   n90    n50    n10    n01
+filename                               seq_count  total_length  n99   n90    n50    n10    n01
 tech_rep_1/filtered_2/barcode01.fastq     359483  2756288556   1192  3034  15477  43240  72972
 tech_rep_1/filtered_2/barcode02.fastq     225292  1962307477   1298  3872  15420  42677  73974
 tech_rep_1/filtered_2/barcode03.fastq     136230   990994025   1160  2770  14896  47679  85409

@@ -1,6 +1,6 @@
 ---
 title: "Small plasmid analysis"
-date: "2020-10-02"
+date: "2020-11-24"
 author: "Ryan Wick"
 output:
   html_document:
@@ -15,7 +15,7 @@ This document contains the R code used to generate data and plots for my paper c
 
 It takes as input:
 
-* `table_s1.xlsx` - assumed to be in the same directory as this file.
+* `Table_S1.xlsx` - assumed to be in the same directory as this file.
 * Four TSV files of read-level information, assumed to be in a `../data` directory:
   * `tech_rep_1_ligation_reads.tsv.gz`
   * `tech_rep_1_rapid_reads.tsv.gz`
@@ -50,11 +50,15 @@ pdf.options(useDingbats = FALSE)
 ## Load data
 
 ```{r}
-barcode_data <- read_excel("table_s1.xlsx", sheet = "Per-barcode", col_names = TRUE)
+barcode_data <- read_excel("Table_S1.xlsx", sheet = "Per-barcode", col_names = TRUE)
 barcode_data$`Barcode number` <- factor(barcode_data$`Barcode number`, levels = barcode_data$`Barcode number`)
 
-replicon_data <- read_excel("table_s1.xlsx", sheet = "Per-replicon", col_names = TRUE)
-run_data <- read_excel("table_s1.xlsx", sheet = "Per-run", col_names = TRUE)
+replicon_data <- read_excel("Table_S1.xlsx", sheet = "Per-replicon", col_names = TRUE)
+replicon_data$size_category <- ifelse(replicon_data$Size >=20000, "big (≥20 kbp)", "small (<20 kbp)")
+replicon_data$rapid_to_illumina <- replicon_data$`ONT rapid read depth (normalised to chromosome)` / replicon_data$`Illumina read depth (normalised to chromosome)`
+replicon_data$ligation_to_illumina <- replicon_data$`ONT ligation read depth (normalised to chromosome)` / replicon_data$`Illumina read depth (normalised to chromosome)`
+
+run_data <- read_excel("Table_S1.xlsx", sheet = "Per-run", col_names = TRUE)
 
 load_read_data <- function(filename) {
   reads <- read_delim(filename, "\t", escape_double = FALSE, trim_ws = TRUE)
@@ -86,7 +90,18 @@ sum(tech_rep_1_rapid_reads$read_length, na.rm = TRUE)
 sum(tech_rep_2_rapid_reads$read_length, na.rm = TRUE)
 ```
 
-Not all runs went for the same amount of time, and some were refueled, which makes it harder to compare yields. So here are yields up to the 12-hour point (before any refueling took place):
+
+
+```{r}
+max(tech_rep_1_ligation_reads$start_time_hours)
+max(tech_rep_2_ligation_reads$start_time_hours)
+max(tech_rep_1_rapid_reads$start_time_hours)
+max(tech_rep_2_rapid_reads$start_time_hours)
+```
+
+
+
+Since not all runs went for the same amount of time, and some were refueled, which makes it harder to compare yields. So here are yields up to the 12-hour point (before any refueling took place):
 ```{r}
 yield_before_hour <- function(read_table, hour_cutoff) {
   read_table %>% filter(start_time_hours < hour_cutoff) -> read_table
@@ -147,7 +162,7 @@ incorrect_demux_percent(tech_rep_1_rapid_reads)
 incorrect_demux_percent(tech_rep_2_rapid_reads)
 ```
 
-I was curious is selecting for high quality reads fixedbad demuxing, so I tried creating high quality subsets based on `barcode_score`, `mean_qscore_template` and `mean_identity`. However, none of these reliably resulted in a significant improvement.
+I was curious is selecting for high quality reads fixed bad demuxing, so I tried creating high quality subsets based on `barcode_score`, `mean_qscore_template` and `mean_identity`. However, none of these reliably resulted in a significant improvement.
 
 
 
@@ -186,7 +201,9 @@ chimera_percent(tech_rep_2_rapid_reads)
 
 ## ONT vs Illumina read depth
 
-This is the paper's main-text figure, comparing Illumina and ONT read depth for plasmids.
+This compares the normalised Illumina and ONT read depths for plasmids, which are classified as either 'big' or 'small'.
+
+A regression line and r-squared value are included. The regression line for the ligation kit is well below the y=x diagonal and have a weaker r-squared. The line for the rapid kit is close to the y=x diagonal and has a stronger r-squared.
 
 ```{r ont_vs_illumina_depth, fig.width = 8, fig.height = 3.75, useDingbats = FALSE}
 # https://stackoverflow.com/a/13451587/2438989
@@ -199,9 +216,6 @@ r_squared_text = function(m) {
 ont_vs_illumina_depth <- function(replicon_data, column_name, plot_title, y_title, point_colour, line_colour, line_fill_colour, regression) {
   column_name <- sym(column_name)
 
-  replicon_data$size_category <- ifelse(replicon_data$Size >=20000, "big (≥20 kbp)", "small (<20 kbp)")
-  # replicon_data = filter(replicon_data, Size < 20000)
-  
   p <- ggplot(replicon_data, aes(x=`Illumina read depth (normalised to chromosome)`, y=!!column_name)) +
     geom_abline(linetype = "dashed", colour = "#CCCCCC") +
     geom_smooth(method='lm', colour=line_colour, fill=line_fill_colour, size=0.5, se = FALSE) +
@@ -220,7 +234,7 @@ replicon_data_no_chromosome$rapid_log_depth <- log10(replicon_data_no_chromosome
 replicon_data_no_chromosome$illumina_log_depth <- log10(replicon_data_no_chromosome$`Illumina read depth (normalised to chromosome)`)
 
 # Log-based regressions
-ligation_to_illumina <- lm(ligation_log_depth ~ illumina_log_depth, data=replicon_data_no_chromosome)
+ligation_to_illumina <- lm(ligation_log_depth ~ illumina_log_depth * Size, data=replicon_data_no_chromosome)
 rapid_to_illumina <- lm(rapid_log_depth ~ illumina_log_depth, data=replicon_data_no_chromosome)
 rapid_to_ligation <- lm(rapid_log_depth ~ ligation_log_depth, data=replicon_data_no_chromosome)
 
@@ -239,7 +253,101 @@ plot_grid(p1, p2, ncol = 2, align="hv")
 I did experiment with using GC-corrected Illumina depths, i.e. adjusting the Illumina depths to compensate for the GC bias of that platform. But it only made a tiny insignificant difference (and complicated the method) so I opted against it.
 
 
+This plot shows the same data, but instead using the normalised depths directly, it uses the ONT/Illumina depth ratio.
 
+```{r depth_vs_plasmid_size_grouped, fig.width = 6.5, fig.height = 4, useDingbats = FALSE}
+depth_ratios <- data.frame(replicon_data$Replicon)
+depth_ratios$rapid_to_illumina <- replicon_data$rapid_to_illumina
+depth_ratios$ligation_to_illumina <- replicon_data$ligation_to_illumina
+depth_ratios$size_category <- replicon_data$size_category
+colnames(depth_ratios) <- c("Replicon", "rapid", "ligation", "size")
+depth_ratios %>% filter(Replicon != "chromosome") %>% drop_na() %>% select(-Replicon) -> depth_ratios
+depth_ratios %>% gather(prep, ratio, -size) -> depth_ratios
+depth_ratios$size <- factor(depth_ratios$size, levels = c("small (<20 kbp)", "big (≥20 kbp)"))
+depth_ratios %>% filter(prep == "rapid") -> rapid_depth_ratios
+depth_ratios %>% filter(prep == "ligation") -> ligation_depth_ratios
+
+small_big_depth_ratios <- function(depth_ratios, plot_title, y_title, point_colour) {
+  p <- ggplot(depth_ratios, aes(x = size, y = ratio)) +
+    geom_hline(yintercept=1, linetype="dashed", colour = "#888888") +
+    geom_dotplot(binwidth=0.1, binaxis = "y", stackdir = "center", fill=point_colour, colour=NA) +
+    theme_bw() + theme(plot.background = element_blank()) +
+    scale_y_log10(breaks = c(0.01, 0.1, 1, 10), labels = c("0.01", "0.1", "1", "10"), minor_breaks = NULL) +
+    coord_fixed(ylim = c(0.007, 10), ratio=0.8) +
+    labs(x = "Plasmid size", y = y_title, title = plot_title)
+  return(p)
+}
+  
+p1 <- small_big_depth_ratios(ligation_depth_ratios, "Oxford Nanopore vs Illumina sequencing read depths for plasmids\n",
+                             "Ligation:Illumina read depth ratio", "#CB4D42")
+p2 <- small_big_depth_ratios(rapid_depth_ratios, "",
+                             "Rapid:Illumina read depth ratio", "#00989D")
+
+plot_grid(p1, p2, ncol = 2, align="hv")
+```
+
+
+This plot once again shows the same data, but puts plasmid size as a continuous variable on the x axis (instead of categorical). I liked this one best and it is thus used in the main text.
+
+```{r depth_vs_plasmid_size, fig.width = 8, fig.height = 3.75, useDingbats = FALSE}
+depth_ratios <- data.frame(replicon_data$Replicon)
+depth_ratios$Size <- replicon_data$Size
+depth_ratios$size_log <- log10(depth_ratios$Size)
+depth_ratios$rapid_to_illumina <- replicon_data$rapid_to_illumina
+depth_ratios$rapid_to_illumina_log <- log10(depth_ratios$rapid_to_illumina)
+depth_ratios$ligation_to_illumina <- replicon_data$ligation_to_illumina
+depth_ratios$ligation_to_illumina_log <- log10(depth_ratios$ligation_to_illumina)
+colnames(depth_ratios) <- c("replicon", "size", "size_log", "rapid", "rapid_log", "ligation", "ligation_log")
+depth_ratios %>% filter(replicon != "chromosome") %>% drop_na() %>% select(-replicon) -> depth_ratios
+
+size_depth_ratios <- function(depth_ratios, column_name, plot_title, y_title, point_colour) {
+  column_name <- sym(column_name)
+
+  p <- ggplot(depth_ratios, aes(x = size, y = !!column_name)) +
+    geom_hline(yintercept=1, linetype="dashed", colour = "#888888") +
+    # geom_smooth(method='lm', size=0.5, se = FALSE, colour=point_colour) +
+    geom_point(colour = point_colour) +
+    theme_bw() + theme(plot.background = element_blank()) +
+    scale_x_log10(breaks = c(1000, 3000, 10000, 30000, 100000, 300000), labels = c("1", "3", "10", "30", "100", "300"), minor_breaks = NULL, expand=c(0, 0)) +
+    scale_y_log10(breaks = c(0.01, 0.1, 1, 10), labels = c("0.01", "0.1", "1", "10"), minor_breaks = NULL) +
+    coord_fixed(xlim = c(1000, 300000), ylim = c(0.007, 10), ratio=0.7) +
+    labs(x = "Plasmid size (kbp)", y = y_title, title = plot_title)
+    
+  return(p)
+}
+  
+p1 <- size_depth_ratios(depth_ratios, "ligation",
+                        "Oxford Nanopore vs Illumina sequencing read depths for plasmids\n",
+                        "Ligation:Illumina read depth ratio", "#CB4D42")
+p2 <- size_depth_ratios(depth_ratios, "rapid", "",
+                        "Rapid:Illumina read depth ratio", "#00989D")
+
+plot_grid(p1, p2, ncol = 2, align="hv")
+```
+
+I wanted p-values for whether or not there is a relationship between plasmid size and the ONT/Illumina depth ratio. I.e. the null hypothesis is that the slope = 0.
+
+```{r}
+ligation_to_size <- lm(ligation_log ~ size_log, data=depth_ratios)
+rapid_to_size <- lm(rapid_log ~ size_log, data=depth_ratios)
+
+summary(ligation_to_size)
+summary(rapid_to_size)
+```
+
+The results are pretty clear! For ligation (p = 1.87e-12), there is a strong relationship. For rapid (p = 0.417), there isn't.
+
+
+Calculating the mean/min underrepresentation of <10 kbp plasmids in ligation reads (I report this value in the text):
+```{r}
+small_plasmid_depth_ratios <- filter(depth_ratios, size < 20000)
+mean(small_plasmid_depth_ratios$ligation)
+min(small_plasmid_depth_ratios$ligation)
+
+small_plasmid_depth_ratios <- filter(depth_ratios, size < 3000)
+mean(small_plasmid_depth_ratios$ligation)
+min(small_plasmid_depth_ratios$ligation)
+```
 
 
 ## Barcode distributions
@@ -313,6 +421,28 @@ p3 <- barcode_n50s(barcode_data, "Rapid (run 1) read N50", "Rapid (run 1)", "#00
 p4 <- barcode_n50s(barcode_data, "Rapid (run 2) read N50", "Rapid (run 2)", "#00989D", 30000)
 
 plot_grid(p1, p2, p3, p4, ncol = 2, align="hv")
+```
+
+This has the same data as the previous plot, but in a grouped bar format:
+```{r barcode_n50s_grouped, fig.width = 8, fig.height = 4, useDingbats = FALSE}
+barcode_data_real_barcodes <- filter(barcode_data, `Barcode number` != "6" & `Barcode number` != "9" &
+                                                   `Barcode number` != "10" & `Barcode number` != "11" &
+                                                   `Barcode number` != "12" & `Barcode number` != "unclassified")
+barcode_data_real_barcodes = subset(barcode_data_real_barcodes, select = c(`Barcode number`,
+                                                                           `Ligation (run 1) read N50`, `Rapid (run 1) read N50`,
+                                                                           `Ligation (run 2) read N50`, `Rapid (run 2) read N50`))
+colnames(barcode_data_real_barcodes) <- c("Num", "Ligation 1", "Rapid 1", "Ligation 2", "Rapid 2")
+barcode_data_real_barcodes <- barcode_data_real_barcodes %>% pivot_longer(-Num, names_to = "Sequencing run", values_to = "N50")
+barcode_data_real_barcodes$`Sequencing run` <- factor(barcode_data_real_barcodes$`Sequencing run`, levels = c("Ligation 1", "Rapid 1", "Ligation 2", "Rapid 2"))
+
+ggplot(barcode_data_real_barcodes) +
+    geom_bar(aes(x=Num, y=N50, fill=`Sequencing run`), stat = "identity", position = "dodge") +
+    theme_bw() + theme(plot.background = element_blank()) +
+    scale_fill_manual(values = c("Ligation 1" = "#CB4D42", "Rapid 1" = "#00989D",
+                                 "Ligation 2" = "#E58E8C", "Rapid 2" = "#52CCCC")) +
+    scale_y_continuous(expand = c(0, 0), breaks = c(0, 10000, 20000, 30000), labels = c("0", "10k", "20k", "30k")) +
+    coord_cartesian(ylim = c(0, 30000)) +
+    labs(x = "Barcode number", y = "Read N50", title = "Per-barcode read N50 lengths")
 ```
 
 
@@ -403,7 +533,7 @@ identity_vs_translocation_speed <- function(read_table, plot_title, point_colour
                        labels = paste(seq(90, 100, 2), "%", sep = "")) +
     scale_x_continuous(breaks = seq(0, 600, 100)) +
     coord_cartesian(xlim = c(0, 600), ylim = c(0.9, 1)) +
-    labs(title = plot_title, x = "translocation speed", y = "identity")
+    labs(title = plot_title, x = "translocation speed (bp/sec)", y = "identity")
   
   return(p)
 }
@@ -429,16 +559,16 @@ identity_vs_start_time <- function(read_table, plot_title, point_colour) {
   read_table %>% filter(mean_identity > 0.5) -> read_table
   read_table %>% filter(read_length > 10000) -> read_table
   
-  read_table <- read_table[0:50000,]  # so we don't have too many points
+  read_table <- read_table[0:100000,]  # so we don't have too many points
 
   p <- ggplot(read_table) +
-    rasterise(geom_point(aes(x=start_time_hours, y=mean_identity), colour=point_colour, alpha=0.15, shape=16, size=0.5), dpi=600) +
+    rasterise(geom_point(aes(x=start_time_hours, y=mean_identity), colour=point_colour, alpha=0.05, shape=16, size=0.5), dpi=600) +
     theme_bw() + theme(plot.background = element_blank()) +
     scale_y_continuous(breaks = seq(0.9, 1, 0.02),
                        labels = paste(seq(90, 100, 2), "%", sep = "")) +
     scale_x_continuous(breaks = seq(0, max_time, 6),
                        expand = c(0, 0)) +
-    coord_cartesian(xlim = c(0, max_time), ylim = c(0.9, 1)) +
+    coord_cartesian(xlim = c(0, max_time), ylim = c(0.92, 1)) +
     labs(title = plot_title, x = "read time (hours)", y = "identity")
   
   return(p)
@@ -476,7 +606,7 @@ translocation_speed_vs_start_time <- function(read_table, plot_title, point_colo
     scale_x_continuous(breaks = seq(0, max_time, 6),
                        expand = c(0, 0)) +
     coord_cartesian(xlim = c(0, max_time), ylim = c(0, 600)) +
-    labs(title = plot_title, x = "read time (hours)", y = "translocation speed")
+    labs(title = plot_title, x = "read time (hours)", y = "translocation speed (bp/sec)")
   
   return(p)
 }
