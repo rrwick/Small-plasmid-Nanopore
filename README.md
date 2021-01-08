@@ -33,6 +33,25 @@ The `scripts` directory contains Python scripts used in the analysis: `align_rea
 
 
 
-### Data
+### Tables
 
 The `Table_S1.xlsx` file contains various stats at the run level, barcode level and replicon level. See the first worksheet in the file for a more detailed description of the content.
+
+
+
+
+### Data
+
+The reads, assemblies and per-read tables are too large for GitHub, so you can download them from here:
+[bridges.monash.edu/articles/dataset/Small_plasmid_Nanopore_data/13543754](https://bridges.monash.edu/articles/dataset/Small_plasmid_Nanopore_data/13543754)
+
+There you will find these files:
+* `tech_rep_1_ligation_reads.tar`: a FASTQ file and sequencing summary file for the first ligation run
+* `tech_rep_1_rapid_reads.tar`: a FASTQ file and sequencing summary file for the first rapid run
+* `tech_rep_2_ligation_reads.tar`: a FASTQ file and sequencing summary file for the second ligation run
+* `tech_rep_2_rapid_reads.tar`: a FASTQ file and sequencing summary file for the second ligation run
+* `assemblies.tar.gz`: reference assemblies for the seven isolates (FASTA format)
+* `read_tables.tar`: the TSV output of `assign_reads.py` (one line per read) for each of the four sequencing runs
+
+
+
