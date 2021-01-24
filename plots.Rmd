@@ -476,12 +476,28 @@ identity_distribution <- function(read_table, plot_title, fill_colour, line_colo
   return(p)
 }
 
+proportion_under_identity <- function(read_table, identity_threshold) {
+  read_table %>% filter(mean_identity > 0.5) -> read_table
+  read_table %>% filter(read_length > 10000) -> read_table
+  read_table %>% filter(read_coverage > 0.9) -> read_table
+  
+  total_reads <- nrow(read_table)
+  read_under_90 <- nrow(read_table %>% filter(mean_identity < identity_threshold))
+  
+  return(read_under_90 / total_reads)
+}
+
 p1 <- identity_distribution(tech_rep_1_ligation_reads, "Ligation (run 1)", "#F8766D", "#760000")
 p2 <- identity_distribution(tech_rep_2_ligation_reads, "Ligation (run 2)", "#F8766D", "#760000")
 p3 <- identity_distribution(tech_rep_1_rapid_reads, "Rapid (run 1)", "#00BFC4", "#00555A")
 p4 <- identity_distribution(tech_rep_2_rapid_reads, "Rapid (run 2)", "#00BFC4", "#00555A")
 
 plot_grid(p1, p2, p3, p4, ncol = 1, align="hv")
+
+proportion_under_identity(tech_rep_1_ligation_reads, 0.9)
+proportion_under_identity(tech_rep_2_ligation_reads, 0.9)
+proportion_under_identity(tech_rep_1_rapid_reads, 0.9)
+proportion_under_identity(tech_rep_2_rapid_reads, 0.9)
 ```
 
 
