@@ -6,7 +6,7 @@ information: https://github.com/rrwick/Small-plasmid-Nanopore
 It takes multiple completed assemblies as input and outputs the GC content of each replicon in
 each assembly.
 
-Copyright 2020 Ryan Wick (rrwick@gmail.com)
+Copyright 2021 Ryan Wick (rrwick@gmail.com)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU
 General Public License as published by the Free Software Foundation, either version 3 of the

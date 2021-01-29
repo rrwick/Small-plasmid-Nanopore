@@ -7,7 +7,7 @@ It takes three inputs: a file of ONT reads, a Guppy sequencing summary file and 
 alignments made by the align_reads.py script. It outputs a table of summary information for each
 read in the ONT set.
 
-Copyright 2020 Ryan Wick (rrwick@gmail.com)
+Copyright 2021 Ryan Wick (rrwick@gmail.com)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU
 General Public License as published by the Free Software Foundation, either version 3 of the
@@ -374,16 +374,6 @@ class Alignment(object):
         ref_name_parts = self.ref_name.split('__')
         if len(ref_name_parts) != 2:
             sys.exit('Error: reference names must be in the form of genome_name__replicon_name')
-
-        # self.cigar = None
-        # for part in line_parts:
-        #     if part.startswith('cg:Z:'):
-        #         self.cigar = part[5:]
-        #
-        # self.alignment_score = None
-        # for part in line_parts:
-        #     if part.startswith('AS:i:'):
-        #         self.alignment_score = int(part[5:])
 
     def __repr__(self):
         return str(self.read_start) + '-' + str(self.read_end) + \

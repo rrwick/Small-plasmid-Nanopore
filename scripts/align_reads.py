@@ -7,7 +7,7 @@ It takes a read file and multiple completed assemblies as input. It then indepen
 reads to each replicon in the assemblies and outputs the alignments. The replicons are doubled
 before alignment to allow for alignments over the start/end junction in circular sequences.
 
-Copyright 2020 Ryan Wick (rrwick@gmail.com)
+Copyright 2021 Ryan Wick (rrwick@gmail.com)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU
 General Public License as published by the Free Software Foundation, either version 3 of the

@@ -8,7 +8,7 @@ The latter can either be a table made by the assign_reads.py script (for ONT rea
 BAM file (for Illumina reads). It outputs the average read depth for each replicon in the
 assemblies, with cross-replicon repeats masked out.
 
-Copyright 2020 Ryan Wick (rrwick@gmail.com)
+Copyright 2021 Ryan Wick (rrwick@gmail.com)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU
 General Public License as published by the Free Software Foundation, either version 3 of the

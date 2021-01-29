@@ -7,7 +7,7 @@ It takes a completed assembly and a BAM of Illumina reads as input. It then step
 assembly's chromosome in 1000 bp windows (adjustable via the --window parameter) and outputs the
 GC and read depth for each window. The read depths are normalised to the 50% GC depth.
 
-Copyright 2020 Ryan Wick (rrwick@gmail.com)
+Copyright 2021 Ryan Wick (rrwick@gmail.com)
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU
 General Public License as published by the Free Software Foundation, either version 3 of the

@@ -9,15 +9,10 @@ This repository supplements our paper looking at small plasmid recovery from Oxf
 <p align="center"><img src="banner.png" alt="Banner" width="100%"></p>
 
 
+
 ### Figures
 
 The [`figures`](figures) directory contains all figures (both main-text and supplementary) for the study.
-
-
-
-### Plots
-
-The [`plots.Rmd`](plots.Rmd) file contains the R code used to generate plots for the figures.
 
 
 
@@ -39,6 +34,11 @@ The [`Table_S1.xlsx`](Table_S1.xlsx) file contains various stats at the run leve
 
 
 
+### Plots
+
+The [`plots.Rmd`](plots.Rmd) file contains the R code used to generate plots for the figures.
+
+
 
 ### Data
 
@@ -52,6 +52,3 @@ There you will find these files:
 * `tech_rep_2_rapid_reads.tar`: a FASTQ file and sequencing summary file for the second ligation run
 * `assemblies.tar.gz`: reference assemblies for the seven isolates (FASTA format)
 * `read_tables.tar`: the TSV output of `assign_reads.py` (one line per read) for each of the four sequencing runs
-
-
-
