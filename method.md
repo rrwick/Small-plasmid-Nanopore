@@ -779,6 +779,7 @@ bowtie2 -1 "$illumina_1" -2 "$illumina_2" -x assembly.fasta --fast --threads "$t
 Run this Python code to find the insert size range (can do this before Bowtie2 finishes):
 ```python
 import math
+import statistics
 
 def get_percentile(sorted_list, percentile):
     if not sorted_list:
@@ -790,7 +791,7 @@ def get_percentile(sorted_list, percentile):
     return sorted_list[rank - 1]
 
 insert_sizes = []
-with open('insert_size_test.sam', 'rt') as raw_sam:
+with open('Serratia_marcescens_17-147-1671.sam', 'rt') as raw_sam:
     for sam_line in raw_sam:
         try:
             sam_parts = sam_line.split('\t')
@@ -802,28 +803,29 @@ with open('insert_size_test.sam', 'rt') as raw_sam:
         except (ValueError, IndexError):
             pass
 
+mean_insert = statistics.mean(insert_sizes)
 insert_sizes = sorted(insert_sizes)
 insert_size_1st = get_percentile(insert_sizes, 1.0)
 insert_size_99th = get_percentile(insert_sizes, 99.0)
 print(len(insert_sizes))
-print(insert_size_1st, insert_size_99th)
+print(insert_size_1st, int(round(mean_insert)), insert_size_99th)
 ```
 
 Insert size results:
-* tech_rep_1_barcode01: 157-699 (99.58% overall alignment rate)
-* tech_rep_1_barcode02: 159-721 (99.45% overall alignment rate)
-* tech_rep_1_barcode03: 160-717 (99.00% overall alignment rate)
-* tech_rep_1_barcode04: 160-739 (98.54% overall alignment rate)
-* tech_rep_1_barcode05: 157-715 (97.03% overall alignment rate)
-* tech_rep_1_barcode07: 156-702 (99.22% overall alignment rate)
-* tech_rep_1_barcode08: 159-705 (98.46% overall alignment rate)
-* tech_rep_2_barcode01: 155-677 (98.20% overall alignment rate)
-* tech_rep_2_barcode02: 155-738 (93.79% overall alignment rate)
-* tech_rep_2_barcode03: 156-764 (98.83% overall alignment rate)
-* tech_rep_2_barcode04: 155-743 (86.67% overall alignment rate)
-* tech_rep_2_barcode05: 154-707 (97.29% overall alignment rate)
-* tech_rep_2_barcode07: 155-673 (99.43% overall alignment rate)
-* tech_rep_2_barcode08: 155-721 (97.84% overall alignment rate)
+* tech_rep_1_barcode01: range=157-699, mean=341 (99.58% overall alignment rate)
+* tech_rep_1_barcode02: range=159-721, mean=374 (99.45% overall alignment rate)
+* tech_rep_1_barcode03: range=160-717, mean=384 (99.00% overall alignment rate)
+* tech_rep_1_barcode04: range=160-739, mean=377 (98.54% overall alignment rate)
+* tech_rep_1_barcode05: range=157-715, mean=347 (97.03% overall alignment rate)
+* tech_rep_1_barcode07: range=156-702, mean=331 (99.22% overall alignment rate)
+* tech_rep_1_barcode08: range=159-705, mean=353 (98.46% overall alignment rate)
+* tech_rep_2_barcode01: range=155-677, mean=298 (98.20% overall alignment rate)
+* tech_rep_2_barcode02: range=155-738, mean=307 (93.79% overall alignment rate)
+* tech_rep_2_barcode03: range=156-764, mean=327 (98.83% overall alignment rate)
+* tech_rep_2_barcode04: range=155-743, mean=300 (86.67% overall alignment rate)
+* tech_rep_2_barcode05: range=154-707, mean=295 (97.29% overall alignment rate)
+* tech_rep_2_barcode07: range=155-673, mean=292 (99.43% overall alignment rate)
+* tech_rep_2_barcode08: range=155-721, mean=304 (97.84% overall alignment rate)
 
 ```bash
 rm *.bt2 insert_size_test.sam

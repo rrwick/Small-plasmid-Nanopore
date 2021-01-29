@@ -338,15 +338,24 @@ summary(rapid_to_size)
 The results are pretty clear! For ligation (p = 1.87e-12), there is a strong relationship. For rapid (p = 0.417), there isn't.
 
 
-Calculating the mean/min underrepresentation of <10 kbp plasmids in ligation reads (I report this value in the text):
+Calculating the mean/min underrepresentation of different sized plasmids in ligation reads (I report this value in the text):
+```{r}
+large_plasmid_depth_ratios <- filter(depth_ratios, size > 20000)
+mean(large_plasmid_depth_ratios$ligation)
+min(large_plasmid_depth_ratios$ligation)
+```
+
+
 ```{r}
 small_plasmid_depth_ratios <- filter(depth_ratios, size < 20000)
 mean(small_plasmid_depth_ratios$ligation)
 min(small_plasmid_depth_ratios$ligation)
+```
 
-small_plasmid_depth_ratios <- filter(depth_ratios, size < 3000)
-mean(small_plasmid_depth_ratios$ligation)
-min(small_plasmid_depth_ratios$ligation)
+```{r}
+very_small_plasmid_depth_ratios <- filter(depth_ratios, size < 3000)
+mean(very_small_plasmid_depth_ratios$ligation)
+min(very_small_plasmid_depth_ratios$ligation)
 ```
 
 
