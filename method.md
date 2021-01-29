@@ -1,4 +1,4 @@
-This document contains the commands I used for assembly and analysis. I did them on my Nectar instance, which is running Ubuntu 18.04.
+This document contains the commands I used for assembly and analysis. I did them on my [Nectar](https://nectar.org.au/research-cloud) instance, which is running Ubuntu 18.04.
 
 
 # Reference genome assembly
@@ -116,6 +116,7 @@ done
 These were the read sets after pooling:
 ```
 filename                           seq_count  total_length   n99   n90    n50    n10    n01
+-------------------------------------------------------------------------------------------
 tech_rep_1/pooled/barcode01.fastq     544069    2947202618   519  2371  14915  43166  73303
 tech_rep_1/pooled/barcode02.fastq     341164    2102127159   518  3239  15176  43106  75058
 tech_rep_1/pooled/barcode03.fastq     225234    1078337255   461  2045  14285  47724  85474
@@ -156,6 +157,7 @@ done
 These were the read sets after filtering:
 ```
 filename                               seq_count  total_length   n99   n90    n50    n10    n01
+-----------------------------------------------------------------------------------------------
 tech_rep_1/filtered_1/barcode01.fastq     368328    2848012195  1194  3060  15666  43676  73676
 tech_rep_1/filtered_1/barcode02.fastq     232251    2047353348  1303  3919  15663  43584  75429
 tech_rep_1/filtered_1/barcode03.fastq     140017    1032538203  1163  2812  15206  48583  86497
@@ -172,7 +174,7 @@ tech_rep_2/filtered_1/barcode07.fastq     210940    2406674303  1466  5450  2075
 tech_rep_2/filtered_1/barcode08.fastq     210684    1756319661  1315  3511  15461  45843  73828
 ```
 
-I then ran Filtlong, to clean up very low quality reads (thresholds based on eyeballing the distributions):
+I then ran Filtlong to clean up very low quality reads (thresholds based on eyeballing the distributions):
 ```bash
 cd ~/small_plasmids
 for f in */filtered_1/*.fastq; do
@@ -202,6 +204,7 @@ done
 These were the read sets after filtering:
 ```
 filename                               seq_count  total_length  n99   n90    n50    n10    n01
+----------------------------------------------------------------------------------------------
 tech_rep_1/filtered_2/barcode01.fastq     359483  2756288556   1192  3034  15477  43240  72972
 tech_rep_1/filtered_2/barcode02.fastq     225292  1962307477   1298  3872  15420  42677  73974
 tech_rep_1/filtered_2/barcode03.fastq     136230   990994025   1160  2770  14896  47679  85409
@@ -812,21 +815,22 @@ print(insert_size_1st, int(round(mean_insert)), insert_size_99th)
 ```
 
 Insert size results:
-* tech_rep_1_barcode01: range=157-699, mean=341 (99.58% overall alignment rate)
-* tech_rep_1_barcode02: range=159-721, mean=374 (99.45% overall alignment rate)
-* tech_rep_1_barcode03: range=160-717, mean=384 (99.00% overall alignment rate)
-* tech_rep_1_barcode04: range=160-739, mean=377 (98.54% overall alignment rate)
-* tech_rep_1_barcode05: range=157-715, mean=347 (97.03% overall alignment rate)
-* tech_rep_1_barcode07: range=156-702, mean=331 (99.22% overall alignment rate)
-* tech_rep_1_barcode08: range=159-705, mean=353 (98.46% overall alignment rate)
-* tech_rep_2_barcode01: range=155-677, mean=298 (98.20% overall alignment rate)
-* tech_rep_2_barcode02: range=155-738, mean=307 (93.79% overall alignment rate)
-* tech_rep_2_barcode03: range=156-764, mean=327 (98.83% overall alignment rate)
-* tech_rep_2_barcode04: range=155-743, mean=300 (86.67% overall alignment rate)
-* tech_rep_2_barcode05: range=154-707, mean=295 (97.29% overall alignment rate)
-* tech_rep_2_barcode07: range=155-673, mean=292 (99.43% overall alignment rate)
-* tech_rep_2_barcode08: range=155-721, mean=304 (97.84% overall alignment rate)
+* `tech_rep_1_barcode01`: range=157-699, mean=341, overall alignment rate=99.58%
+* `tech_rep_1_barcode02`: range=159-721, mean=374, overall alignment rate=99.45%
+* `tech_rep_1_barcode03`: range=160-717, mean=384, overall alignment rate=99.00%
+* `tech_rep_1_barcode04`: range=160-739, mean=377, overall alignment rate=98.54%
+* `tech_rep_1_barcode05`: range=157-715, mean=347, overall alignment rate=97.03%
+* `tech_rep_1_barcode07`: range=156-702, mean=331, overall alignment rate=99.22%
+* `tech_rep_1_barcode08`: range=159-705, mean=353, overall alignment rate=98.46%
+* `tech_rep_2_barcode01`: range=155-677, mean=298, overall alignment rate=98.20%
+* `tech_rep_2_barcode02`: range=155-738, mean=307, overall alignment rate=93.79%
+* `tech_rep_2_barcode03`: range=156-764, mean=327, overall alignment rate=98.83%
+* `tech_rep_2_barcode04`: range=155-743, mean=300, overall alignment rate=86.67%
+* `tech_rep_2_barcode05`: range=154-707, mean=295, overall alignment rate=97.29%
+* `tech_rep_2_barcode07`: range=155-673, mean=292, overall alignment rate=99.43%
+* `tech_rep_2_barcode08`: range=155-721, mean=304, overall alignment rate=97.84%
 
+Clean up:
 ```bash
 rm *.bt2 insert_size_test.sam
 ```
@@ -970,7 +974,7 @@ Barcode 8:
    * 8 were in a very long repeat of the genome, and both Illumina graphs agreed on the correct answer.
    * 1 was on a break in the Illumina graph in rep 1 and I went with the unbroken option in rep 2.
    * The last was a bit weird: a long homopolymer where rep 2 had an exact match to one option and rep 1 didn't match either. Not sure about this one, but I went with the exact match for rep 2 in both.
-* Finally, the 17 kbp plasmid has two variants (discovered last time I assembled these genomes) so I included both as 'v1' and 'v2'. Both seem to be present in about a 4:1 ratio of short:long.
+* Finally, the 17 kbp plasmid has two variants (discovered last time I assembled these genomes) so I included both as 'v1' and 'v2'. Both variants are present in both replicates in about a 4:1 ratio of short:long.
 
 
 So in the end, the two technical replicates were exactly the same except for:
@@ -1266,7 +1270,7 @@ for b in tech_rep_2_illumina_reads/*/*.bam; do
 done
 ```
 
-I put all of this depth data into the Excel spreadsheet: `table_s1.xlsx`. For plasmids with two versions, I added the depths of the two versions together to get a single depth for that plasmid.
+I put all of this depth data into the Excel spreadsheet: `Table_S1.xlsx`. For plasmids with two versions, I added the depths of the two versions together to get a single depth for that plasmid.
 
 Also I got the GC content of the assemblies:
 ```bash
