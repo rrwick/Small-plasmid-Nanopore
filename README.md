@@ -11,31 +11,31 @@ This repository supplements our paper looking at small plasmid recovery from Oxf
 
 ### Figures
 
-The `figures` directory contains all figures (both main-text and supplementary) for the study.
+The [`figures`](figures) directory contains all figures (both main-text and supplementary) for the study.
 
 
 
 ### Plots
 
-The `plots.Rmd` file contains the R code used to generate plots for the figures.
+The [`plots.Rmd`](plots.Rmd) file contains the R code used to generate plots for the figures.
 
 
 
 ### Method
 
-The `method.md` file contains the commands I ran to conduct the analysis.
+The [`method.md`](method.md) file contains the commands I ran to conduct the analysis.
 
 
 
 ### Scripts
 
-The `scripts` directory contains Python scripts used in the analysis: `align_reads.py`, `assign_reads.py`, `get_depths.py`, `get_gc.py` and `depth_and_gc.py`. See the header in each script for more information on how it works, and see the `method.md` file for how I used these to produce the data in the study.
+The [`scripts`](scripts) directory contains Python scripts used in the analysis: `align_reads.py`, `assign_reads.py`, `get_depths.py`, `get_gc.py` and `depth_and_gc.py`. See the header in each script for more information on how it works, and see the `method.md` file for how I used these to produce the data in the study.
 
 
 
 ### Tables
 
-The `Table_S1.xlsx` file contains various stats at the run level, barcode level and replicon level. See the first worksheet in the file for a more detailed description of the content.
+The [`Table_S1.xlsx`](Table_S1.xlsx) file contains various stats at the run level, barcode level and replicon level. See the first worksheet in the file for a more detailed description of the content.
 
 
 
