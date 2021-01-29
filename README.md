@@ -2,7 +2,7 @@
 
 # Ligation vs rapid: recovery of small plasmid sequences from Oxford Nanopore sequencing data
 
-This repository supplements our paper looking at small plasmid recovery from Oxford Nanopore sequences:
+This repository supplements our paper looking at small plasmid recovery from Oxford Nanopore sequencing:
 
 [Wick RR, Judd LM, Wyres KL, Holt KE. Ligation vs rapid: recovery of small plasmid sequences from Oxford Nanopore sequencing data. bioRxiv. 2020; doi:TBA.](https://www.biorxiv.org/content/TBA).
 
@@ -12,7 +12,7 @@ This repository supplements our paper looking at small plasmid recovery from Oxf
 
 ### Figures
 
-The [`figures`](figures) directory contains all figures (both main-text and supplementary) for the study.
+The [`figures`](figures) directory contains all figures (both main-text and supplementary) for the study, in PDF and PNG formats.
 
 
 
@@ -24,7 +24,7 @@ The [`method.md`](method.md) file contains the commands I ran to conduct the ana
 
 ### Scripts
 
-The [`scripts`](scripts) directory contains Python scripts used in the analysis: `align_reads.py`, `assign_reads.py`, `get_depths.py`, `get_gc.py` and `depth_and_gc.py`. See the header in each script for more information on how it works, and see the `method.md` file for how I used these to produce the data in the study.
+The [`scripts`](scripts) directory contains Python scripts I wrote for the analysis: `align_reads.py`, `assign_reads.py`, `get_depths.py`, `get_gc.py` and `depth_and_gc.py`. See the header in each script for more information on how it works, and see the [`method.md`](method.md) file for how I used these to produce the data in the study.
 
 
 
