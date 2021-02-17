@@ -376,7 +376,7 @@ summary(ligation_to_size)
 summary(rapid_to_size)
 ```
 
-The results are pretty clear! For ligation (p = 1.87e-12), there is a strong relationship. For rapid (p = 0.417), there isn't.
+The results are pretty clear! For ligation (p = 5.76e-12), there is a strong relationship. For rapid (p = 0.474), there isn't.
 
 
 Calculating the mean/min underrepresentation of different sized plasmids in ligation reads (I report this value in the text):

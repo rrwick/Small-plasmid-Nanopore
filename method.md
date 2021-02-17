@@ -949,6 +949,11 @@ Barcode 5:
     * The second run had a loop in the plasmid, one instance giving 58,382 bp and two instances giving 58,472 bp.
     * The repeat section was pretty high GC (73%)
   * I therefore believe the Trycycler+Pilon assemblies and am leaving it at 58,472 bp.
+* The 9975 bp plasmid:
+  * Was identical to the one in barcode 4.
+  * Was higher depth in barcode 4 than in barcode 5.
+  * The Illumina read depth is very low.
+  * So I think this one is cross-barcode contamination and I got rid of it.
 * The chromosome had a small (1 bp) difference in a repeat:
     * The Illumina graphs only supported the longer option.
     * Each Trycycler+Pilon assembly had a copy of the longer option.
@@ -1074,8 +1079,7 @@ So my final assemblies were:
   * chromosome length=5804453 circular=true
   * plasmid_1 length=118161 circular=true
   * plasmid_2 length=58472 circular=true
-  * plasmid_3 length=9975 circular=true
-  * plasmid_4 length=4574 circular=true
+  * plasmid_3 length=4574 circular=true
 * Klebsiella_variicola_INF345
   * chromosome length=5417255 circular=true
   * plasmid_1 length=250980 circular=true
@@ -1125,7 +1129,6 @@ scp rwic0002@m3-dtn1.massive.org.au:"/mnt/vault2_holt/vault/instruments/minion/2
 cd ~/small_plasmids/tech_rep_2_rapid_reads
 scp rwic0002@m3-dtn1.massive.org.au:"/mnt/vault2_holt/vault/instruments/minion/2020-06-09_small_plasmid_rapid_02/fastq/sequencing_summary.txt.gz" .
 scp rwic0002@m3-dtn1.massive.org.au:"/mnt/vault2_holt/vault/instruments/minion/2020-06-09_small_plasmid_rapid_02/fastq/*.fastq.gz" .
-
 ```
 
 Combine them into one file and sort them alphabetically:
@@ -1221,26 +1224,17 @@ pypy3 ~/small_plasmids/scripts/assign_reads.py tech_rep_2_rapid_reads/reads.fast
 
 Then aligned Illumina reads:
 ```bash
-for genome in Acinetobacter_baumannii_J9 Citrobacter_koseri_MINF_9D Enterobacter_kobei_MSB1_1B Haemophilus_unknown_M1C132_1 Klebsiella_oxytoca_MSB1_2C Klebsiella_variicola_INF345 Serratia_marcescens_17-147-1671; do
-    a=~/small_plasmids/assemblies/"$genome".fasta
-    cd ~/small_plasmids/tech_rep_1_illumina_reads/"$genome"
-    printf "\n"$genome"\n"
-    bowtie2-build "$a" "$a" &> /dev/null
-    bowtie2 -1 trimmed_1.fastq.gz -2 trimmed_2.fastq.gz -U trimmed_u.fastq.gz -x "$a" --sensitive-local --threads 16 -I 150 -X 800 | samtools sort > "$genome".bam
-    samtools index "$genome".bam
-    printf "\n"
+for tech_rep in 1 2; do
+    for genome in Acinetobacter_baumannii_J9 Citrobacter_koseri_MINF_9D Enterobacter_kobei_MSB1_1B Haemophilus_unknown_M1C132_1 Klebsiella_oxytoca_MSB1_2C Klebsiella_variicola_INF345 Serratia_marcescens_17-147-1671; do
+        a=~/small_plasmids/assemblies/"$genome".fasta
+        cd ~/small_plasmids/tech_rep_"$tech_rep"_illumina_reads/"$genome"
+        printf "\n"$genome"\n"
+        bowtie2-build "$a" "$a" &> /dev/null
+        bowtie2 -1 trimmed_1.fastq.gz -2 trimmed_2.fastq.gz -U trimmed_u.fastq.gz -x "$a" --sensitive-local --threads 16 -I 150 -X 800 | samtools sort > "$genome".bam
+        samtools index "$genome".bam
+        printf "\n"
+    done
 done
-
-for genome in Acinetobacter_baumannii_J9 Citrobacter_koseri_MINF_9D Enterobacter_kobei_MSB1_1B Haemophilus_unknown_M1C132_1 Klebsiella_oxytoca_MSB1_2C Klebsiella_variicola_INF345 Serratia_marcescens_17-147-1671; do
-    a=~/small_plasmids/assemblies/"$genome".fasta
-    cd ~/small_plasmids/tech_rep_2_illumina_reads/"$genome"
-    printf "\n"$genome"\n"
-    bowtie2-build "$a" "$a" &> /dev/null
-    bowtie2 -1 trimmed_1.fastq.gz -2 trimmed_2.fastq.gz -U trimmed_u.fastq.gz -x "$a" --sensitive-local --threads 16 -I 150 -X 800 | samtools sort > "$genome".bam
-    samtools index "$genome".bam
-    printf "\n"
-done
-
 rm ~/small_plasmids/assemblies/*.bt2
 ```
 
