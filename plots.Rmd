@@ -300,12 +300,12 @@ depth_ratios$ligation_to_illumina_log <- log10(depth_ratios$ligation_to_illumina
 colnames(depth_ratios) <- c("replicon", "size", "size_log", "rapid", "rapid_log", "ligation", "ligation_log")
 depth_ratios %>% filter(replicon != "chromosome") %>% drop_na() %>% select(-replicon) -> depth_ratios
 
-size_depth_ratios <- function(depth_ratios, column_name, plot_title, y_title, point_colour) {
+size_depth_ratios <- function(depth_ratios, column_name, plot_title, y_title, point_colour, line_colour) {
   column_name <- sym(column_name)
 
   p <- ggplot(depth_ratios, aes(x = size, y = !!column_name)) +
     geom_hline(yintercept=1, linetype="dashed", colour = "#888888") +
-    # geom_smooth(method='lm', size=0.5, se = FALSE, colour=point_colour) +
+    geom_smooth(method='lm', size=0.5, se = FALSE, colour=line_colour) +
     geom_point(colour = point_colour) +
     theme_bw() + theme(plot.background = element_blank()) +
     scale_x_log10(breaks = c(1000, 3000, 10000, 30000, 100000, 300000), labels = c("1", "3", "10", "30", "100", "300"), minor_breaks = NULL, expand=c(0, 0)) +
@@ -318,9 +318,9 @@ size_depth_ratios <- function(depth_ratios, column_name, plot_title, y_title, po
   
 p1 <- size_depth_ratios(depth_ratios, "ligation",
                         "Oxford Nanopore vs Illumina sequencing read depths for plasmids\n",
-                        "Ligation:Illumina read depth ratio", "#CB4D42")
+                        "Ligation:Illumina read depth ratio", "#CB4D42", "#760000")
 p2 <- size_depth_ratios(depth_ratios, "rapid", "",
-                        "Rapid:Illumina read depth ratio", "#00989D")
+                        "Rapid:Illumina read depth ratio", "#00989D", "#00555A")
 
 plot_grid(p1, p2, ncol = 2, align="hv")
 ```
