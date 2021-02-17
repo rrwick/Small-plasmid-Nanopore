@@ -1307,3 +1307,50 @@ scripts/depth_and_gc.py assemblies/Serratia_marcescens_17-147-1671.fasta tech_re
 
 gzip gc_and_depth.tsv
 ```
+
+
+
+
+
+# Look for interesting genes
+
+I wanted to see if the plasmids contained any interesting genes, e.g. AMR or virulence. To do this, I made a FASTA file for each of the 27 plasmids where I doubled the sequence:
+```
+Plasmid FASTA file                       Doubled size
+-----------------------------------------------------
+Acinetobacter_baumannii_J9__006078.fasta        12156
+Acinetobacter_baumannii_J9__145059.fasta       290118
+Citrobacter_koseri_MINF_9D__009294.fasta        18588
+Citrobacter_koseri_MINF_9D__064962.fasta       129924
+Enterobacter_kobei_MSB1_1B__002369.fasta         4738
+Enterobacter_kobei_MSB1_1B__003715.fasta         7430
+Enterobacter_kobei_MSB1_1B__004665.fasta         9330
+Enterobacter_kobei_MSB1_1B__108411.fasta       216822
+Enterobacter_kobei_MSB1_1B__136482.fasta       272964
+Haemophilus_unknown_M1C132_1__005675.fasta      11350
+Haemophilus_unknown_M1C132_1__007392.fasta      14784
+Haemophilus_unknown_M1C132_1__009975.fasta      19950
+Haemophilus_unknown_M1C132_1__010719.fasta      21438
+Haemophilus_unknown_M1C132_1__039398.fasta      78796
+Klebsiella_oxytoca_MSB1_2C__004574.fasta         9148
+Klebsiella_oxytoca_MSB1_2C__009975.fasta        19950
+Klebsiella_oxytoca_MSB1_2C__058472.fasta       116944
+Klebsiella_oxytoca_MSB1_2C__118161.fasta       236322
+Klebsiella_variicola_INF345__003514.fasta        7028
+Klebsiella_variicola_INF345__005783.fasta       11566
+Klebsiella_variicola_INF345__031780.fasta       63560
+Klebsiella_variicola_INF345__243620.fasta      487240
+Klebsiella_variicola_INF345__250980.fasta      501960
+Serratia_marcescens_17-147-1671__001934.fasta    3868
+Serratia_marcescens_17-147-1671__017406.fasta   34812
+Serratia_marcescens_17-147-1671__161385.fasta  322770
+Serratia_marcescens_17-147-1671__184477.fasta  368954
+```
+
+The doubling was to guard against the possibility that an interesting gene spanned the start/end junction (particularly a concern for small plasmids which have few genes). This means my gene search will usually report two copies of any interesting gene for each plasmids.
+
+To check for AMR and resistance genes, I used Kleborate:
+```bash
+~/Programs/Kleborate/kleborate-runner.py --resistance -a *__*.fasta -o Kleborate_plasmid_results.txt
+```
+I then manually edited the resulting file to remove duplicate hits.
