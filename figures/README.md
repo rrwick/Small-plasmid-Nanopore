@@ -9,7 +9,7 @@
 
 <p align="center"><img src="Fig_2_plasmid_abudance.png" alt="Figure 2" width="80%"></p>
 
-**Figure 2**: relative plasmid read depths resulting from A) ligation and B) rapid ONT library preparation methods. Each point in the plots represents one plasmid. The read depth ratio is the normalised ONT read depth divided by the normalised Illumina read depth. The dashed line at ratio=1 indicates perfect agreement of plasmid depths between ONT and Illumina data. Points above the dashed line indicate plasmids that are overrepresented in ONT reads, while points below the dashed line indicate plasmids that are underrepresented in ONT reads.
+**Figure 2**: plasmid abundance resulting from A) ligation and B) rapid ONT library preparation methods. Each point in the plots represents one plasmid. The read depth ratio is the normalised ONT read depth divided by the normalised Illumina read depth. The dashed lines at ratio=1 indicate perfect agreement of plasmid depths between ONT and Illumina data. Points above the dashed lines indicate plasmids that are overrepresented in ONT reads, while points below the dashed lines indicate plasmids that are underrepresented in ONT reads.
 
 For ONT ligation reads (A), small plasmids are systematically underrepresented relative to Illumina reads. For ONT rapid reads (B), plasmid size has no clear effect, and depths for both small and large plasmids are in good agreement with Illumina reads.
 
