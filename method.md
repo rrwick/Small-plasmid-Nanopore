@@ -1,6 +1,24 @@
 This document contains the commands I used for assembly and analysis. I did them on my [Nectar](https://nectar.org.au/research-cloud) instance, which is running Ubuntu 18.04.
 
 
+
+# Table of contents
+
+* [Reference genome assembly](#reference-genome-assembly)
+  * [Prep files](#prep-files)
+  * [Long-read assemblies](#long-read-assemblies)
+  * [Polishing](#polishing)
+  * [Finalising](#finalising)
+* [Read characterisation](#read-characterisation)
+  * [Prep files](#prep-files-1)
+  * [Align reads](#align-reads)
+  * [Gather and combine data](#gather-and-combine-data)
+* [Get depths](#get-depths)
+* [Depth vs GC](#depth-vs-gc)
+* [Look for interesting genes](#look-for-interesting-genes)
+
+
+
 # Reference genome assembly
 
 ## Prep files
@@ -1241,7 +1259,7 @@ rm ~/small_plasmids/assemblies/*.bt2
 
 
 
-## Get depths
+# Get depths
 
 For Nanopore reads:
 ```bash
@@ -1275,7 +1293,7 @@ scripts/get_gc.py assemblies
 
 
 
-## Depth vs GC
+# Depth vs GC
 
 I wanted to assess whether or not the GC bias in Illumina sequencing might be a problem, so I wrote a script to give depth and GC for all 1 kbp windows in the chromosome:
 ```bash
