@@ -1,4 +1,4 @@
-This document contains the commands I used for assembly and analysis. I did them on my [Nectar](https://nectar.org.au/research-cloud) instance, which is running Ubuntu 18.04.
+This document contains the commands I used for assembly and analysis. I did them on my [Nectar](https://nectar.org.au/research-cloud) instance, which is running Ubuntu 18.04. The commands are specific to my setup (e.g. scping files from [MASSIVE](https://docs.massive.org.au/) to Nectar), so you'll need to adjust commands to your setup as necessary to replicate this process.
 
 
 
@@ -1361,7 +1361,7 @@ Serratia_marcescens_17-147-1671__184477.fasta  368954
 
 The doubling was to guard against the possibility that an interesting gene spanned the start/end junction (particularly a concern for small plasmids which have few genes). This means my gene search will usually report two copies of any interesting gene for each plasmids.
 
-To check for AMR and resistance genes, I used Kleborate:
+To check for AMR and resistance genes, I used [Kleborate](https://github.com/katholt/Kleborate):
 ```bash
 ~/Programs/Kleborate/kleborate-runner.py --resistance -a *__*.fasta -o Kleborate_plasmid_results.txt
 ```
