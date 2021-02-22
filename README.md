@@ -4,7 +4,7 @@
 
 This repository supplements our paper looking at small plasmid recovery from Oxford Nanopore sequencing:
 
-[Wick RR, Judd LM, Wyres KL, Holt KE. Ligation vs rapid: recovery of small plasmid sequences from Oxford Nanopore sequencing data. bioRxiv. 2020; doi:TBA.](https://www.biorxiv.org/content/TBA).
+[Wick RR, Judd LM, Wyres KL, Holt KE. Recovery of small plasmid sequences via Oxford Nanopore sequencing. bioRxiv. 2021; doi:TBA.](https://www.biorxiv.org/content/TBA).
 
 <p align="center"><img src="banner.png" alt="Banner" width="100%"></p>
 
