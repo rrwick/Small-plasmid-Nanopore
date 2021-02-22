@@ -1,6 +1,6 @@
 <p align="center"><img src="banner.png" alt="Banner" width="100%"></p>
 
-# Ligation vs rapid: recovery of small plasmid sequences from Oxford Nanopore sequencing data
+# Recovery of small plasmid sequences via Oxford Nanopore sequencing
 
 This repository supplements our paper looking at small plasmid recovery from Oxford Nanopore sequencing:
 
