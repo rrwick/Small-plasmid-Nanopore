@@ -22,6 +22,7 @@ have received a copy of the GNU General Public License along with this program. 
 import argparse
 import glob
 import gzip
+import numpy as np
 import os
 import pathlib
 import statistics
@@ -72,9 +73,14 @@ def main():
                 unmasked_depths.append(depth)
         try:
             mean_depth = statistics.mean(unmasked_depths)
+            depth_stdev = statistics.stdev(unmasked_depths)
+            q25, q75 = np.percentile(unmasked_depths, [25 ,75])
+            q25, q75 = int(q25), int(q75)
+            iqr = q75 - q25
         except statistics.StatisticsError:
-            mean_depth = 'NA'
-        print(f'{replicon_name}\t{replicon_length}\t{len(unmasked_depths)}\t{mean_depth}')
+            mean_depth, depth_stdev, q25, q75, iqr = 'NA', 'NA', 'NA', 'NA', 'NA'
+        print(f'{replicon_name}\t{replicon_length}\t{len(unmasked_depths)}\t{mean_depth}\t'
+              f'{depth_stdev}\t{q25}\t{q75}\t{iqr}')
 
 
 def get_replicon_lengths(assemblies_dir):
