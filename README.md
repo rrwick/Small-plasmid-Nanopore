@@ -46,7 +46,9 @@ The reads, assemblies and per-read tables are too large for GitHub, so you can d
 There you will find these files:
 * `tech_rep_1_ligation_reads.tar`: a FASTQ file and sequencing summary file for the first ligation run
 * `tech_rep_1_rapid_reads.tar`: a FASTQ file and sequencing summary file for the first rapid run
+* `tech_rep_1_illumina_reads.tar`: separate paired-end FASTQ files for each of the seven isolates in the first replicate
 * `tech_rep_2_ligation_reads.tar`: a FASTQ file and sequencing summary file for the second ligation run
 * `tech_rep_2_rapid_reads.tar`: a FASTQ file and sequencing summary file for the second ligation run
+* `tech_rep_2_illumina_reads.tar`: separate paired-end FASTQ files for each of the seven isolates in the second replicate
 * `assemblies.tar.gz`: reference assemblies for the seven isolates (FASTA format)
 * `read_tables.tar`: the TSV output of `assign_reads.py` (one line per read) for each of the four sequencing runs
