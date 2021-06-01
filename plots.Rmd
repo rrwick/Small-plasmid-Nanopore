@@ -36,6 +36,7 @@ library(knitr)
 library(readxl)
 library(cowplot)
 library(ggrastr)
+library(scales)
 ```
 
 Output settings:
@@ -49,6 +50,7 @@ pdf.options(useDingbats = FALSE)
 
 ## Load data
 
+Most of the data is pretty quick to load:
 ```{r}
 barcode_data <- read_excel("Table_S1.xlsx", sheet = "Per-barcode", col_names = TRUE)
 barcode_data$`Barcode number` <- factor(barcode_data$`Barcode number`, levels = barcode_data$`Barcode number`)
@@ -59,7 +61,11 @@ replicon_data$rapid_to_illumina <- replicon_data$`ONT rapid read depth (normalis
 replicon_data$ligation_to_illumina <- replicon_data$`ONT ligation read depth (normalised to chromosome)` / replicon_data$`Illumina read depth (normalised to chromosome)`
 
 run_data <- read_excel("Table_S1.xlsx", sheet = "Per-run", col_names = TRUE)
+gc_depth <- read_delim("../data/gc_and_depth.tsv.gz", "\t", escape_double = FALSE, trim_ws = TRUE)
+```
 
+But the read data takes a while:
+```{r}
 load_read_data <- function(filename) {
   reads <- read_delim(filename, "\t", escape_double = FALSE, trim_ws = TRUE)
   reads$mean_identity <- as.numeric(sub("%", "", reads$mean_identity)) / 100.0
@@ -74,7 +80,6 @@ tech_rep_1_rapid_reads <- load_read_data("../data/tech_rep_1_rapid_reads.tsv.gz"
 tech_rep_2_ligation_reads <- load_read_data("../data/tech_rep_2_ligation_reads.tsv.gz")
 tech_rep_2_rapid_reads <- load_read_data("../data/tech_rep_2_rapid_reads.tsv.gz")
 
-gc_depth <- read_delim("../data/gc_and_depth.tsv.gz", "\t", escape_double = FALSE, trim_ws = TRUE)
 ```
 
 
@@ -89,8 +94,6 @@ sum(tech_rep_2_ligation_reads$read_length, na.rm = TRUE)
 sum(tech_rep_1_rapid_reads$read_length, na.rm = TRUE)
 sum(tech_rep_2_rapid_reads$read_length, na.rm = TRUE)
 ```
-
-
 
 ```{r}
 max(tech_rep_1_ligation_reads$start_time_hours)
@@ -201,103 +204,18 @@ chimera_percent(tech_rep_2_rapid_reads)
 
 ## ONT vs Illumina read depth
 
-This compares the normalised Illumina and ONT read depths for plasmids, which are classified as either 'big' or 'small'.
-
-A regression line and r-squared value are included. The regression line for the ligation kit is well below the y=x diagonal and have a weaker r-squared. The line for the rapid kit is close to the y=x diagonal and has a stronger r-squared.
-
-```{r ont_vs_illumina_depth, fig.width = 8, fig.height = 3.75, useDingbats = FALSE}
-# https://stackoverflow.com/a/13451587/2438989
-r_squared_text = function(m) {
-  l <- list(r2 = format(summary(m)$r.squared, digits = 3));
-  eq <- substitute(italic(r)^2~"="~r2, l)
-  as.character(as.expression(eq));                 
-}
-
-ont_vs_illumina_depth <- function(replicon_data, column_name, plot_title, y_title, point_colour, line_colour, line_fill_colour, regression) {
-  column_name <- sym(column_name)
-
-  p <- ggplot(replicon_data, aes(x=`Illumina read depth (normalised to chromosome)`, y=!!column_name)) +
-    geom_abline(linetype = "dashed", colour = "#CCCCCC") +
-    geom_smooth(method='lm', colour=line_colour, fill=line_fill_colour, size=0.5, se = FALSE) +
-    geom_point(colour = point_colour, aes(shape=size_category)) +
-    annotate("text", x = 3.2, y = 320, label = r_squared_text(regression), parse = TRUE, colour=line_colour) +
-    theme_bw() + theme(plot.background = element_blank(), legend.position = "none") +
-    scale_x_log10(breaks = c(0.1, 1, 10, 100, 1000), labels = c("0.1", "1", "10", "100", "1000"), minor_breaks = NULL, expand = c(0, 0)) +
-    scale_y_log10(breaks = c(0.1, 1, 10, 100, 1000), labels = c("0.1", "1", "10", "100", "1000"), minor_breaks = NULL, expand = c(0, 0)) +
-    coord_fixed(xlim = c(0.1, 1000), ylim = c(0.1, 1000)) +
-    labs(x = "Illumina read depth", y = y_title, title = plot_title)
-}
-
-replicon_data_no_chromosome <- filter(replicon_data, Replicon != "chromosome")
-replicon_data_no_chromosome$ligation_log_depth <- log10(replicon_data_no_chromosome$`ONT ligation read depth (normalised to chromosome)`)
-replicon_data_no_chromosome$rapid_log_depth <- log10(replicon_data_no_chromosome$`ONT rapid read depth (normalised to chromosome)`)
-replicon_data_no_chromosome$illumina_log_depth <- log10(replicon_data_no_chromosome$`Illumina read depth (normalised to chromosome)`)
-
-# Log-based regressions
-ligation_to_illumina <- lm(ligation_log_depth ~ illumina_log_depth * Size, data=replicon_data_no_chromosome)
-rapid_to_illumina <- lm(rapid_log_depth ~ illumina_log_depth, data=replicon_data_no_chromosome)
-rapid_to_ligation <- lm(rapid_log_depth ~ ligation_log_depth, data=replicon_data_no_chromosome)
-
-summary(ligation_to_illumina)
-summary(rapid_to_illumina)
-
-p1 <- ont_vs_illumina_depth(replicon_data_no_chromosome, "ONT ligation read depth (normalised to chromosome)",
-                            "Oxford Nanopore vs Illumina sequencing read depths for plasmids\n",
-                            "ONT ligation read depth", "#CB4D42", "#760000", "#FFD7D5", ligation_to_illumina)
-p2 <- ont_vs_illumina_depth(replicon_data_no_chromosome, "ONT rapid read depth (normalised to chromosome)",
-                            "", "ONT rapid read depth", "#00989D", "#00555A", "#B3EDEF", rapid_to_illumina)
-
-plot_grid(p1, p2, ncol = 2, align="hv")
-```
-
-I did experiment with using GC-corrected Illumina depths, i.e. adjusting the Illumina depths to compensate for the GC bias of that platform. But it only made a tiny insignificant difference (and complicated the method) so I opted against it.
-
-
-This plot shows the same data, but instead using the normalised depths directly, it uses the ONT/Illumina depth ratio.
-
-```{r depth_vs_plasmid_size_grouped, fig.width = 6.5, fig.height = 4, useDingbats = FALSE}
-depth_ratios <- data.frame(replicon_data$Replicon)
-depth_ratios$rapid_to_illumina <- replicon_data$rapid_to_illumina
-depth_ratios$ligation_to_illumina <- replicon_data$ligation_to_illumina
-depth_ratios$size_category <- replicon_data$size_category
-colnames(depth_ratios) <- c("Replicon", "rapid", "ligation", "size")
-depth_ratios %>% filter(Replicon != "chromosome") %>% drop_na() %>% select(-Replicon) -> depth_ratios
-depth_ratios %>% gather(prep, ratio, -size) -> depth_ratios
-depth_ratios$size <- factor(depth_ratios$size, levels = c("small (<20 kbp)", "big (≥20 kbp)"))
-depth_ratios %>% filter(prep == "rapid") -> rapid_depth_ratios
-depth_ratios %>% filter(prep == "ligation") -> ligation_depth_ratios
-
-small_big_depth_ratios <- function(depth_ratios, plot_title, y_title, point_colour) {
-  p <- ggplot(depth_ratios, aes(x = size, y = ratio)) +
-    geom_hline(yintercept=1, linetype="dashed", colour = "#888888") +
-    geom_dotplot(binwidth=0.1, binaxis = "y", stackdir = "center", fill=point_colour, colour=NA) +
-    theme_bw() + theme(plot.background = element_blank()) +
-    scale_y_log10(breaks = c(0.01, 0.1, 1, 10), labels = c("0.01", "0.1", "1", "10"), minor_breaks = NULL) +
-    coord_fixed(ylim = c(0.007, 10), ratio=0.8) +
-    labs(x = "Plasmid size", y = y_title, title = plot_title)
-  return(p)
-}
-  
-p1 <- small_big_depth_ratios(ligation_depth_ratios, "Oxford Nanopore vs Illumina sequencing read depths for plasmids\n",
-                             "Ligation:Illumina read depth ratio", "#CB4D42")
-p2 <- small_big_depth_ratios(rapid_depth_ratios, "",
-                             "Rapid:Illumina read depth ratio", "#00989D")
-
-plot_grid(p1, p2, ncol = 2, align="hv")
-```
-
-
-This plot once again shows the same data, but puts plasmid size as a continuous variable on the x axis (instead of categorical). I liked this one best and it is thus used in the main text.
+This plot puts plasmid size on the X axis and normalised depth ratios on the Y axis. The plot is done twice, once for ligation (left) and once for rapid (right).
 
 ```{r depth_vs_plasmid_size, fig.width = 8, fig.height = 3.75, useDingbats = FALSE}
 depth_ratios <- data.frame(replicon_data$Replicon)
+depth_ratios$tech_rep <- as.factor(replicon_data$`Technical replicate`)
 depth_ratios$Size <- replicon_data$Size
 depth_ratios$size_log <- log10(depth_ratios$Size)
 depth_ratios$rapid_to_illumina <- replicon_data$rapid_to_illumina
 depth_ratios$rapid_to_illumina_log <- log10(depth_ratios$rapid_to_illumina)
 depth_ratios$ligation_to_illumina <- replicon_data$ligation_to_illumina
 depth_ratios$ligation_to_illumina_log <- log10(depth_ratios$ligation_to_illumina)
-colnames(depth_ratios) <- c("replicon", "size", "size_log", "rapid", "rapid_log", "ligation", "ligation_log")
+colnames(depth_ratios) <- c("replicon", "tech_rep", "size", "size_log", "rapid", "rapid_log", "ligation", "ligation_log")
 depth_ratios %>% filter(replicon != "chromosome") %>% drop_na() %>% select(-replicon) -> depth_ratios
 
 size_depth_ratios <- function(depth_ratios, column_name, plot_title, y_title, point_colour, line_colour) {
@@ -305,9 +223,8 @@ size_depth_ratios <- function(depth_ratios, column_name, plot_title, y_title, po
 
   p <- ggplot(depth_ratios, aes(x = size, y = !!column_name)) +
     geom_hline(yintercept=1, linetype="dashed", colour = "#888888") +
-    geom_smooth(method='lm', size=0.5, se = FALSE, colour=line_colour) +
-    geom_point(colour = point_colour) +
-    theme_bw() + theme(plot.background = element_blank()) +
+    geom_point(aes(shape = tech_rep), colour = point_colour, size=2) +
+    theme_bw() + theme(plot.background = element_blank(), legend.position = "none") +
     scale_x_log10(breaks = c(1000, 3000, 10000, 30000, 100000, 300000), labels = c("1", "3", "10", "30", "100", "300"), minor_breaks = NULL, expand=c(0, 0)) +
     scale_y_log10(breaks = c(0.01, 0.1, 1, 10), labels = c("0.01", "0.1", "1", "10"), minor_breaks = NULL) +
     coord_fixed(xlim = c(1000, 300000), ylim = c(0.007, 10), ratio=0.7) +
@@ -326,54 +243,24 @@ plot_grid(p1, p2, ncol = 2, align="hv")
 ```
 
 
-This is the same plot, but with the points coloured by the genome of origin. However, I didn't think it really added useful info (and it busied up the plot), so I didn't use this one.
+## P-values
 
-```{r depth_vs_plasmid_size_colour_by_genome, fig.width = 8, fig.height = 3.75, useDingbats = FALSE}
-depth_ratios <- data.frame(replicon_data$Replicon)
-depth_ratios$Genome <- replicon_data$Genome
-depth_ratios$Size <- replicon_data$Size
-depth_ratios$size_log <- log10(depth_ratios$Size)
-depth_ratios$rapid_to_illumina <- replicon_data$rapid_to_illumina
-depth_ratios$rapid_to_illumina_log <- log10(depth_ratios$rapid_to_illumina)
-depth_ratios$ligation_to_illumina <- replicon_data$ligation_to_illumina
-depth_ratios$ligation_to_illumina_log <- log10(depth_ratios$ligation_to_illumina)
-colnames(depth_ratios) <- c("replicon", "genome", "size", "size_log", "rapid", "rapid_log", "ligation", "ligation_log")
-depth_ratios %>% filter(replicon != "chromosome") %>% drop_na() %>% select(-replicon) -> depth_ratios
+I wanted p-values for whether or not there is a relationship between plasmid size and the ONT/Illumina depth ratio. I.e. the null hypothesis is that plasmid size does not affect depth ratios.
 
-size_depth_ratios <- function(depth_ratios, column_name, plot_title, y_title, line_colour) {
-  column_name <- sym(column_name)
-
-  p <- ggplot(depth_ratios, aes(x = size, y = !!column_name)) +
-    geom_hline(yintercept=1, linetype="dashed", colour = "#888888") +
-    geom_smooth(method='lm', size=0.5, se = FALSE, colour=line_colour) +
-    geom_point(aes(colour = genome)) +
-    theme_bw() + theme(plot.background = element_blank(), legend.position = "none") +
-    scale_x_log10(breaks = c(1000, 3000, 10000, 30000, 100000, 300000), labels = c("1", "3", "10", "30", "100", "300"), minor_breaks = NULL, expand=c(0, 0)) +
-    scale_y_log10(breaks = c(0.01, 0.1, 1, 10), labels = c("0.01", "0.1", "1", "10"), minor_breaks = NULL) +
-    coord_fixed(xlim = c(1000, 300000), ylim = c(0.007, 10), ratio=0.7) +
-    labs(x = "Plasmid size (kbp)", y = y_title, title = plot_title)
-
-  return(p)
-}
-
-p1 <- size_depth_ratios(depth_ratios, "ligation",
-                        "Oxford Nanopore vs Illumina sequencing read depths for plasmids\n",
-                        "Ligation:Illumina read depth ratio", "#444444")
-p2 <- size_depth_ratios(depth_ratios, "rapid", "",
-                        "Rapid:Illumina read depth ratio", "#444444")
-
-plot_grid(p1, p2, ncol = 2, align="hv")
-```
-
-
-I wanted p-values for whether or not there is a relationship between plasmid size and the ONT/Illumina depth ratio. I.e. the null hypothesis is that the slope = 0.
-
+One way to do it is a linear regression. I think this is best done on the log-transformed data, as that improves the assumptions of a least-squares regression.
 ```{r}
 ligation_to_size <- lm(ligation_log ~ size_log, data=depth_ratios)
 rapid_to_size <- lm(rapid_log ~ size_log, data=depth_ratios)
 
 summary(ligation_to_size)
 summary(rapid_to_size)
+```
+However, this regression implies a specific kind of relationship which I don't think exists. E.g. I would expect the relationship to level off with higher plasmid sizes.
+
+So another way is a rank-based non-parametic correlation test, like Spearman/Kendall. I think this is better because it doesn't assume a shape of the relationship. It also gives the same answer whether or not I log the data (because that doesn't change the rank), which is nice. I went with Kendall because it can handle ties better (my data has ties).
+```{r}
+cor.test(depth_ratios$size, depth_ratios$ligation, method="kendall", alternative="two.sided")
+cor.test(depth_ratios$size, depth_ratios$rapid, method="kendall", alternative="two.sided")
 ```
 
 The results are pretty clear! For ligation (p = 5.76e-12), there is a strong relationship. For rapid (p = 0.474), there isn't.
@@ -719,4 +606,234 @@ p2 <- ggplot(gc_depth, aes(x=gc, y=depth)) +
   labs(x = "GC content (%)", y = "Relative read depth")
 
 plot_grid(p1, p2, ncol = 1, rel_heights = c(1, 4), align="hv")
+```
+
+
+
+
+## Read-start count distributions
+
+```{r read_start_distributions_plot, fig.width = 23, fig.height = 35, useDingbats = FALSE}
+rapid_reads_per_window_distributions <- read_delim("../data/rapid_reads_per_window_distributions.tsv", "\t", escape_double = FALSE, trim_ws = TRUE)
+ligation_reads_per_window_distributions <- read_delim("../data/ligation_reads_per_window_distributions.tsv", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+mysqrt_trans <- function() {
+    trans_new("mysqrt", 
+              transform = base::sqrt,
+              inverse = function(x) ifelse(x<0, 0, x^2),
+              domain = c(0, Inf))
+}
+
+plot_distributions <- function(table, row, colour, title) {
+  replicon <- table[[row, "replicon"]]
+  mean_reads <- table[[row, "mean_reads_per_window"]]
+  empirical_counts <- as.numeric(unlist(str_split(table[[row, "reads_per_window_distribution"]], ",")))
+  total <- sum(empirical_counts)
+  empirical <- empirical_counts / total
+  max_count <- length(empirical) - 1
+  read_counts <- 0:max_count
+  poisson <- dpois(read_counts, mean_reads)
+  max_prob <- max(empirical, poisson)
+  distributions <- data.frame(read_counts, empirical, poisson)
+  distributions %>% pivot_longer(!read_counts, names_to = "type", values_to = "mass") -> distributions
+  
+  # The probability of seeing a read count as high as (or higher than) the maximum observed count.
+  prob_of_max <- ppois(max_count-1, mean_reads, lower.tail = FALSE)
+  prob_of_max_str <- formatC(prob_of_max, format = "e", digits = 2)
+  prob_of_max_str <- paste("italic(P) (italic(X) >=", max_count, ")==", prob_of_max_str)
+
+  p <- ggplot(distributions, aes(x=read_counts, y=mass, colour=type)) +
+    # geom_vline(xintercept = max_count, colour="grey", linetype = "longdash") +
+    geom_point() +
+    annotate("text", label = prob_of_max_str, x = Inf, y = Inf, vjust = 1.3, hjust = 1.03, parse=TRUE) + 
+    theme_bw() +
+    scale_colour_manual(values = c("empirical" = colour, "poisson" = "#aaaaaa")) +
+    theme(plot.background = element_blank(), plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"), legend.position = "none") +
+    labs(title = title, x = NULL, y = NULL) +
+    scale_x_continuous(trans="mysqrt", limits=c(0, NA)) +
+    scale_y_continuous(trans="mysqrt", limits=c(0, max_prob*1.25))
+  
+  return(p)
+}
+
+lig_ab1 <- plot_distributions(ligation_reads_per_window_distributions,  1, "#CB4D42", expression(paste(italic("A. baumannii"), " J9 chromosome")))
+lig_ab2 <- plot_distributions(ligation_reads_per_window_distributions,  2, "#CB4D42", expression(paste(italic("A. baumannii"), " J9 plasmid 1")))
+lig_ab3 <- plot_distributions(ligation_reads_per_window_distributions,  3, "#CB4D42", expression(paste(italic("A. baumannii"), " J9 plasmid 2")))
+lig_ck1 <- plot_distributions(ligation_reads_per_window_distributions,  4, "#CB4D42", expression(paste(italic("C. koseri"), " MINF_9D chromosome")))
+lig_ck2 <- plot_distributions(ligation_reads_per_window_distributions,  5, "#CB4D42", expression(paste(italic("C. koseri"), " MINF_9D plasmid 1")))
+lig_ck3 <- plot_distributions(ligation_reads_per_window_distributions,  6, "#CB4D42", expression(paste(italic("C. koseri"), " MINF_9D plasmid 2")))
+lig_ek1 <- plot_distributions(ligation_reads_per_window_distributions,  7, "#CB4D42", expression(paste(italic("E. kobei"), " MSB1_1B chromosome")))
+lig_ek2 <- plot_distributions(ligation_reads_per_window_distributions,  8, "#CB4D42", expression(paste(italic("E. kobei"), " MSB1_1B plasmid 1")))
+lig_ek3 <- plot_distributions(ligation_reads_per_window_distributions,  9, "#CB4D42", expression(paste(italic("E. kobei"), " MSB1_1B plasmid 2")))
+lig_ek4 <- plot_distributions(ligation_reads_per_window_distributions, 10, "#CB4D42", expression(paste(italic("E. kobei"), " MSB1_1B plasmid 3")))
+lig_ek5 <- plot_distributions(ligation_reads_per_window_distributions, 11, "#CB4D42", expression(paste(italic("E. kobei"), " MSB1_1B plasmid 4")))
+lig_hu1 <- plot_distributions(ligation_reads_per_window_distributions, 14, "#CB4D42", expression(paste(italic("Haemophilus"), " M1C132_1 chromosome")))
+lig_hu2 <- plot_distributions(ligation_reads_per_window_distributions, 15, "#CB4D42", expression(paste(italic("Haemophilus"), " M1C132_1 plasmid 1")))
+lig_hu3 <- plot_distributions(ligation_reads_per_window_distributions, 16, "#CB4D42", expression(paste(italic("Haemophilus"), " M1C132_1 plasmid 2")))
+lig_hu4 <- plot_distributions(ligation_reads_per_window_distributions, 17, "#CB4D42", expression(paste(italic("Haemophilus"), " M1C132_1 plasmid 3")))
+lig_ko1 <- plot_distributions(ligation_reads_per_window_distributions, 20, "#CB4D42", expression(paste(italic("K. oxytoca"), " MSB1_2C chromosome")))
+lig_ko2 <- plot_distributions(ligation_reads_per_window_distributions, 21, "#CB4D42", expression(paste(italic("K. oxytoca"), " MSB1_2C plasmid 1")))
+lig_ko3 <- plot_distributions(ligation_reads_per_window_distributions, 22, "#CB4D42", expression(paste(italic("K. oxytoca"), " MSB1_2C plasmid 2")))
+lig_ko4 <- plot_distributions(ligation_reads_per_window_distributions, 23, "#CB4D42", expression(paste(italic("K. oxytoca"), " MSB1_2C plasmid 3")))
+lig_kv1 <- plot_distributions(ligation_reads_per_window_distributions, 24, "#CB4D42", expression(paste(italic("K. variicola"), " INF345 chromosome")))
+lig_kv2 <- plot_distributions(ligation_reads_per_window_distributions, 25, "#CB4D42", expression(paste(italic("K. variicola"), " INF345 plasmid 1")))
+lig_kv3 <- plot_distributions(ligation_reads_per_window_distributions, 26, "#CB4D42", expression(paste(italic("K. variicola"), " INF345 plasmid 2")))
+lig_kv4 <- plot_distributions(ligation_reads_per_window_distributions, 27, "#CB4D42", expression(paste(italic("K. variicola"), " INF345 plasmid 3")))
+lig_kv5 <- plot_distributions(ligation_reads_per_window_distributions, 28, "#CB4D42", expression(paste(italic("K. variicola"), " INF345 plasmid 4")))
+lig_kv6 <- plot_distributions(ligation_reads_per_window_distributions, 29, "#CB4D42", expression(paste(italic("K. variicola"), " INF345 plasmid 5")))
+lig_sm1 <- plot_distributions(ligation_reads_per_window_distributions, 30, "#CB4D42", expression(paste(italic("S. marcescens"), " 17-147-1671 chromosome")))
+lig_sm2 <- plot_distributions(ligation_reads_per_window_distributions, 31, "#CB4D42", expression(paste(italic("S. marcescens"), " 17-147-1671 plasmid 1")))
+lig_sm3 <- plot_distributions(ligation_reads_per_window_distributions, 32, "#CB4D42", expression(paste(italic("S. marcescens"), " 17-147-1671 plasmid 2")))
+lig_sm4 <- plot_distributions(ligation_reads_per_window_distributions, 35, "#CB4D42", expression(paste(italic("S. marcescens"), " 17-147-1671 plasmid 4")))
+
+rap_ab1 <- plot_distributions(rapid_reads_per_window_distributions,  1, "#00989D", expression(paste(italic("A. baumannii"), " J9 chromosome")))
+rap_ab2 <- plot_distributions(rapid_reads_per_window_distributions,  2, "#00989D", expression(paste(italic("A. baumannii"), " J9 plasmid 1")))
+rap_ab3 <- plot_distributions(rapid_reads_per_window_distributions,  3, "#00989D", expression(paste(italic("A. baumannii"), " J9 plasmid 2")))
+rap_ck1 <- plot_distributions(rapid_reads_per_window_distributions,  4, "#00989D", expression(paste(italic("C. koseri"), " MINF_9D chromosome")))
+rap_ck2 <- plot_distributions(rapid_reads_per_window_distributions,  5, "#00989D", expression(paste(italic("C. koseri"), " MINF_9D plasmid 1")))
+rap_ck3 <- plot_distributions(rapid_reads_per_window_distributions,  6, "#00989D", expression(paste(italic("C. koseri"), " MINF_9D plasmid 2")))
+rap_ek1 <- plot_distributions(rapid_reads_per_window_distributions,  7, "#00989D", expression(paste(italic("E. kobei"), " MSB1_1B chromosome")))
+rap_ek2 <- plot_distributions(rapid_reads_per_window_distributions,  8, "#00989D", expression(paste(italic("E. kobei"), " MSB1_1B plasmid 1")))
+rap_ek3 <- plot_distributions(rapid_reads_per_window_distributions,  9, "#00989D", expression(paste(italic("E. kobei"), " MSB1_1B plasmid 2")))
+rap_ek4 <- plot_distributions(rapid_reads_per_window_distributions, 10, "#00989D", expression(paste(italic("E. kobei"), " MSB1_1B plasmid 3")))
+rap_ek5 <- plot_distributions(rapid_reads_per_window_distributions, 11, "#00989D", expression(paste(italic("E. kobei"), " MSB1_1B plasmid 4")))
+rap_hu1 <- plot_distributions(rapid_reads_per_window_distributions, 14, "#00989D", expression(paste(italic("Haemophilus"), " M1C132_1 chromosome")))
+rap_hu2 <- plot_distributions(rapid_reads_per_window_distributions, 15, "#00989D", expression(paste(italic("Haemophilus"), " M1C132_1 plasmid 1")))
+rap_hu3 <- plot_distributions(rapid_reads_per_window_distributions, 16, "#00989D", expression(paste(italic("Haemophilus"), " M1C132_1 plasmid 2")))
+rap_hu4 <- plot_distributions(rapid_reads_per_window_distributions, 17, "#00989D", expression(paste(italic("Haemophilus"), " M1C132_1 plasmid 3")))
+rap_hu5 <- plot_distributions(rapid_reads_per_window_distributions, 18, "#00989D", expression(paste(italic("Haemophilus"), " M1C132_1 plasmid 4")))
+rap_hu6 <- plot_distributions(rapid_reads_per_window_distributions, 19, "#00989D", expression(paste(italic("Haemophilus"), " M1C132_1 plasmid 5")))
+rap_ko1 <- plot_distributions(rapid_reads_per_window_distributions, 20, "#00989D", expression(paste(italic("K. oxytoca"), " MSB1_2C chromosome")))
+rap_ko2 <- plot_distributions(rapid_reads_per_window_distributions, 21, "#00989D", expression(paste(italic("K. oxytoca"), " MSB1_2C plasmid 1")))
+rap_ko3 <- plot_distributions(rapid_reads_per_window_distributions, 22, "#00989D", expression(paste(italic("K. oxytoca"), " MSB1_2C plasmid 2")))
+rap_ko4 <- plot_distributions(rapid_reads_per_window_distributions, 23, "#00989D", expression(paste(italic("K. oxytoca"), " MSB1_2C plasmid 3")))
+rap_kv1 <- plot_distributions(rapid_reads_per_window_distributions, 24, "#00989D", expression(paste(italic("K. variicola"), " INF345 chromosome")))
+rap_kv2 <- plot_distributions(rapid_reads_per_window_distributions, 25, "#00989D", expression(paste(italic("K. variicola"), " INF345 plasmid 1")))
+rap_kv3 <- plot_distributions(rapid_reads_per_window_distributions, 26, "#00989D", expression(paste(italic("K. variicola"), " INF345 plasmid 2")))
+rap_kv4 <- plot_distributions(rapid_reads_per_window_distributions, 27, "#00989D", expression(paste(italic("K. variicola"), " INF345 plasmid 3")))
+rap_kv5 <- plot_distributions(rapid_reads_per_window_distributions, 28, "#00989D", expression(paste(italic("K. variicola"), " INF345 plasmid 4")))
+rap_kv6 <- plot_distributions(rapid_reads_per_window_distributions, 29, "#00989D", expression(paste(italic("K. variicola"), " INF345 plasmid 5")))
+rap_sm1 <- plot_distributions(rapid_reads_per_window_distributions, 30, "#00989D", expression(paste(italic("S. marcescens"), " 17-147-1671 chromosome")))
+rap_sm2 <- plot_distributions(rapid_reads_per_window_distributions, 31, "#00989D", expression(paste(italic("S. marcescens"), " 17-147-1671 plasmid 1")))
+rap_sm3 <- plot_distributions(rapid_reads_per_window_distributions, 32, "#00989D", expression(paste(italic("S. marcescens"), " 17-147-1671 plasmid 2")))
+rap_sm4 <- plot_distributions(rapid_reads_per_window_distributions, 35, "#00989D", expression(paste(italic("S. marcescens"), " 17-147-1671 plasmid 4")))
+
+plot_grid(lig_ab1, lig_ab2, lig_ab3, NULL, NULL, NULL,
+          lig_ck1, lig_ck2, lig_ck3, NULL, NULL, NULL,
+          lig_ek1, lig_ek2, lig_ek3, lig_ek4, lig_ek5, NULL,
+          lig_hu1, lig_hu2, lig_hu3, lig_hu4, NULL, NULL,
+          lig_ko1, lig_ko2, lig_ko3, lig_ko4, NULL, NULL,
+          lig_kv1, lig_kv2, lig_kv3, lig_kv4, lig_kv5, lig_kv6,
+          lig_sm1, lig_sm2, lig_sm3, lig_sm4, NULL, NULL,
+          rap_ab1, rap_ab2, rap_ab3, NULL, NULL, NULL,
+          rap_ck1, rap_ck2, rap_ck3, NULL, NULL, NULL,
+          rap_ek1, rap_ek2, rap_ek3, rap_ek4, rap_ek5, NULL,
+          rap_hu1, rap_hu2, rap_hu3, rap_hu4, rap_hu5, rap_hu6,
+          rap_ko1, rap_ko2, rap_ko3, rap_ko4, NULL, NULL,
+          rap_kv1, rap_kv2, rap_kv3, rap_kv4, rap_kv5, rap_kv6,
+          rap_sm1, rap_sm2, rap_sm3, rap_sm4, NULL, NULL,
+          ncol = 6, align="hv")
+```
+
+
+
+
+## Read-start count Manhattan plots
+
+
+```{r read_start_manhattan_plot, fig.width = 12, fig.height = 2.5, useDingbats = FALSE}
+signed_sqrt <- function(x){sign(x)*sqrt(abs(x))}
+inv_signed_sqrt <- function(x){x^2*sign(x)}
+mysqrt_trans <- function() {
+    trans_new("mysqrt",
+              transform = signed_sqrt,
+              inverse = inv_signed_sqrt)
+}
+
+manhattan_plot <- function(directory, replicon, colour, sig_threshold, title, replicon_size) {
+  filename <- paste(directory, "/", replicon, ".tsv", sep = "")
+  counts <- read_delim(filename, "\t", escape_double = FALSE, trim_ws = TRUE)
+  counts %>% filter(signed_neg_log10_p_val != "n/a") -> counts
+  counts$signed_neg_log10_p_val <- as.numeric(counts$signed_neg_log10_p_val)
+
+  # Cap values at 100 (or -100).
+  counts$signed_neg_log10_p_val[counts$signed_neg_log10_p_val > 100] <- 100
+  counts$signed_neg_log10_p_val[counts$signed_neg_log10_p_val < -100] <- -100
+
+  ratio <- 0.5 * (replicon_size^0.75)
+
+  ggplot(counts, aes(x=window, y=signed_neg_log10_p_val)) +
+      rasterise( geom_point(colour=colour), dpi=600) +
+      geom_hline(yintercept=sig_threshold, linetype = "dashed") +
+      geom_hline(yintercept=-sig_threshold, linetype = "dashed") +
+      theme_bw() +
+      theme(plot.background = element_blank(), plot.margin = margin(0.25, 0.25, 0.25, 0.25, "cm"), legend.position = "none") +
+      labs(title = title, x = NULL, y = NULL) +
+      scale_x_continuous(labels = NULL, breaks = NULL, expand = c(0, 0), limits=c(0, replicon_size)) +
+      scale_y_continuous(trans="mysqrt", limits=c(-100, 100), breaks = c(-100, -50, -10, 0, 10, 50, 100), minor_breaks = NULL,
+                         labels = c("100", "50", "10","0", "10", "50", "100")) +
+      coord_fixed(ratio = ratio)
+}
+
+manhattan_plot("../data/ligation_read_start_counts", "Acinetobacter_baumannii_J9__chromosome", "#CB4D42", 5.879233546813747, expression(paste(italic("A. baumannii"), " chromosome")), 3798646)
+manhattan_plot("../data/ligation_read_start_counts", "Acinetobacter_baumannii_J9__plasmid_1", "#CB4D42", 4.418301291319746, expression(paste(italic("A. baumannii"), " plasmid 1")), 145059)
+manhattan_plot("../data/ligation_read_start_counts", "Acinetobacter_baumannii_J9__plasmid_2", "#CB4D42", 3.0791812460476247, expression(paste(italic("A. baumannii"), " plasmid 2")), 6078)
+manhattan_plot("../data/ligation_read_start_counts", "Citrobacter_koseri_MINF_9D__chromosome", "#CB4D42", 5.976881629799957, expression(paste(italic("C. koseri"), " chromosome")), 4758908)
+manhattan_plot("../data/ligation_read_start_counts", "Citrobacter_koseri_MINF_9D__plasmid_1", "#CB4D42", 4.083502619830267, expression(paste(italic("C. koseri"), " plasmid 1")), 64962)
+manhattan_plot("../data/ligation_read_start_counts", "Citrobacter_koseri_MINF_9D__plasmid_2", "#CB4D42", 3.2648178230095364, expression(paste(italic("C. koseri"), " plasmid 2")), 9294)
+manhattan_plot("../data/ligation_read_start_counts", "Enterobacter_kobei_MSB1_1B__chromosome", "#CB4D42", 5.977266212427293, expression(paste(italic("E. kobei"), " chromosome")), 4837926)
+manhattan_plot("../data/ligation_read_start_counts", "Enterobacter_kobei_MSB1_1B__plasmid_1", "#CB4D42", 4.221674997070769, expression(paste(italic("E. kobei"), " plasmid 1")), 136482)
+manhattan_plot("../data/ligation_read_start_counts", "Enterobacter_kobei_MSB1_1B__plasmid_2", "#CB4D42", 4.267171728403014, expression(paste(italic("E. kobei"), " plasmid 2")), 108411)
+manhattan_plot("../data/ligation_read_start_counts", "Enterobacter_kobei_MSB1_1B__plasmid_3", "#CB4D42", 2.8920946026904804, expression(paste(italic("E. kobei"), " plasmid 3")), 4665)
+manhattan_plot("../data/ligation_read_start_counts", "Enterobacter_kobei_MSB1_1B__plasmid_4", "#CB4D42", 2.7781512503836434, expression(paste(italic("E. kobei"), " plasmid 4")), 3715)
+manhattan_plot("../data/ligation_read_start_counts", "Haemophilus_unknown_M1C132_1__chromosome", "#CB4D42", 5.612889769287484, expression(paste(italic("Haemophilus"), " chromosome")), 2051882)
+manhattan_plot("../data/ligation_read_start_counts", "Haemophilus_unknown_M1C132_1__plasmid_1", "#CB4D42", 3.895422546039408, expression(paste(italic("Haemophilus"), " plasmid 1")), 39398)
+manhattan_plot("../data/ligation_read_start_counts", "Haemophilus_unknown_M1C132_1__plasmid_2", "#CB4D42", 3.330413773349191, expression(paste(italic("Haemophilus"), " plasmid 2")), 10719)
+manhattan_plot("../data/ligation_read_start_counts", "Haemophilus_unknown_M1C132_1__plasmid_3", "#CB4D42", 2.9912260756924947, expression(paste(italic("Haemophilus"), " plasmid 3")), 9975)
+manhattan_plot("../data/ligation_read_start_counts", "Klebsiella_oxytoca_MSB1_2C__chromosome", "#CB4D42", 6.064113412115037, expression(paste(italic("K. oxytoca"), " chromosome")), 5804453)
+manhattan_plot("../data/ligation_read_start_counts", "Klebsiella_oxytoca_MSB1_2C__plasmid_1", "#CB4D42", 4.37254380075907, expression(paste(italic("K. oxytoca"), " plasmid 1")), 118161)
+manhattan_plot("../data/ligation_read_start_counts", "Klebsiella_oxytoca_MSB1_2C__plasmid_2", "#CB4D42", 4.067442842776381, expression(paste(italic("K. oxytoca"), " plasmid 2")), 58472)
+manhattan_plot("../data/ligation_read_start_counts", "Klebsiella_oxytoca_MSB1_2C__plasmid_3", "#CB4D42", 2.9542425094393248, expression(paste(italic("K. oxytoca"), " plasmid 3")), 4574)
+manhattan_plot("../data/ligation_read_start_counts", "Klebsiella_variicola_INF345__chromosome", "#CB4D42", 6.033721225732489, expression(paste(italic("K. variicola"), " chromosome")), 5417255)
+manhattan_plot("../data/ligation_read_start_counts", "Klebsiella_variicola_INF345__plasmid_1", "#CB4D42", 4.693726948923647, expression(paste(italic("K. variicola"), " plasmid 1")), 250980)
+manhattan_plot("../data/ligation_read_start_counts", "Klebsiella_variicola_INF345__plasmid_2", "#CB4D42", 4.476251796007033, expression(paste(italic("K. variicola"), " plasmid 2")), 243620)
+manhattan_plot("../data/ligation_read_start_counts", "Klebsiella_variicola_INF345__plasmid_3", "#CB4D42", 3.8020892578817325, expression(paste(italic("K. variicola"), " plasmid 3")), 31780)
+manhattan_plot("../data/ligation_read_start_counts", "Klebsiella_variicola_INF345__plasmid_4", "#CB4D42", 3.0569048513364727, expression(paste(italic("K. variicola"), " plasmid 4")), 5783)
+manhattan_plot("../data/ligation_read_start_counts", "Klebsiella_variicola_INF345__plasmid_5", "#CB4D42", 2.845098040014257, expression(paste(italic("K. variicola"), " plasmid 5")), 3514)
+manhattan_plot("../data/ligation_read_start_counts", "Serratia_marcescens_17-147-1671__chromosome", "#CB4D42", 6.0354377435390045, expression(paste(italic("S. marcescens"), " chromosome")), 5518076)
+manhattan_plot("../data/ligation_read_start_counts", "Serratia_marcescens_17-147-1671__plasmid_1", "#CB4D42", 4.392345155361204, expression(paste(italic("S. marcescens"), " plasmid 1")), 184477)
+manhattan_plot("../data/ligation_read_start_counts", "Serratia_marcescens_17-147-1671__plasmid_2", "#CB4D42", 4.45969397647797, expression(paste(italic("S. marcescens"), " plasmid 2")), 161385)
+manhattan_plot("../data/ligation_read_start_counts", "Serratia_marcescens_17-147-1671__plasmid_4", "#CB4D42", 2.57978359661681, expression(paste(italic("S. marcescens"), " plasmid 4")), 1934)
+
+manhattan_plot("../data/rapid_read_start_counts", "Acinetobacter_baumannii_J9__chromosome", "#00989D", 5.879233546813747, expression(paste(italic("A. baumannii"), " chromosome")), 3798646)
+manhattan_plot("../data/rapid_read_start_counts", "Acinetobacter_baumannii_J9__plasmid_1", "#00989D", 4.418301291319746, expression(paste(italic("A. baumannii"), " plasmid 1")), 145059)
+manhattan_plot("../data/rapid_read_start_counts", "Acinetobacter_baumannii_J9__plasmid_2", "#00989D", 3.0791812460476247, expression(paste(italic("A. baumannii"), " plasmid 2")), 6078)
+manhattan_plot("../data/rapid_read_start_counts", "Citrobacter_koseri_MINF_9D__chromosome", "#00989D", 5.976881629799957, expression(paste(italic("C. koseri"), " chromosome")), 4758908)
+manhattan_plot("../data/rapid_read_start_counts", "Citrobacter_koseri_MINF_9D__plasmid_1", "#00989D", 4.083502619830267, expression(paste(italic("C. koseri"), " plasmid 1")), 64962)
+manhattan_plot("../data/rapid_read_start_counts", "Citrobacter_koseri_MINF_9D__plasmid_2", "#00989D", 3.2648178230095364, expression(paste(italic("C. koseri"), " plasmid 2")), 9294)
+manhattan_plot("../data/rapid_read_start_counts", "Enterobacter_kobei_MSB1_1B__chromosome", "#00989D", 5.977266212427293, expression(paste(italic("E. kobei"), " chromosome")), 4837926)
+manhattan_plot("../data/rapid_read_start_counts", "Enterobacter_kobei_MSB1_1B__plasmid_1", "#00989D", 4.221674997070769, expression(paste(italic("E. kobei"), " plasmid 1")), 136482)
+manhattan_plot("../data/rapid_read_start_counts", "Enterobacter_kobei_MSB1_1B__plasmid_2", "#00989D", 4.267171728403014, expression(paste(italic("E. kobei"), " plasmid 2")), 108411)
+manhattan_plot("../data/rapid_read_start_counts", "Enterobacter_kobei_MSB1_1B__plasmid_3", "#00989D", 2.8920946026904804, expression(paste(italic("E. kobei"), " plasmid 3")), 4665)
+manhattan_plot("../data/rapid_read_start_counts", "Enterobacter_kobei_MSB1_1B__plasmid_4", "#00989D", 2.7781512503836434, expression(paste(italic("E. kobei"), " plasmid 4")), 3715)
+manhattan_plot("../data/rapid_read_start_counts", "Haemophilus_unknown_M1C132_1__chromosome", "#00989D", 5.612889769287484, expression(paste(italic("Haemophilus"), " chromosome")), 2051882)
+manhattan_plot("../data/rapid_read_start_counts", "Haemophilus_unknown_M1C132_1__plasmid_1", "#00989D", 3.895422546039408, expression(paste(italic("Haemophilus"), " plasmid 1")), 39398)
+manhattan_plot("../data/rapid_read_start_counts", "Haemophilus_unknown_M1C132_1__plasmid_2", "#00989D", 3.330413773349191, expression(paste(italic("Haemophilus"), " plasmid 2")), 10719)
+manhattan_plot("../data/rapid_read_start_counts", "Haemophilus_unknown_M1C132_1__plasmid_3", "#00989D", 2.9912260756924947, expression(paste(italic("Haemophilus"), " plasmid 3")), 9975)
+manhattan_plot("../data/rapid_read_start_counts", "Haemophilus_unknown_M1C132_1__plasmid_4", "#00989D", 3.164352855784437, expression(paste(italic("Haemophilus"), " plasmid 4")), 7392)
+manhattan_plot("../data/rapid_read_start_counts", "Haemophilus_unknown_M1C132_1__plasmid_5", "#00989D", 3.0492180226701815, expression(paste(italic("Haemophilus"), " plasmid 5")), 5675)
+manhattan_plot("../data/rapid_read_start_counts", "Klebsiella_oxytoca_MSB1_2C__chromosome", "#00989D", 6.064113412115037, expression(paste(italic("K. oxytoca"), " chromosome")), 5804453)
+manhattan_plot("../data/rapid_read_start_counts", "Klebsiella_oxytoca_MSB1_2C__plasmid_1", "#00989D", 4.37254380075907, expression(paste(italic("K. oxytoca"), " plasmid 1")), 118161)
+manhattan_plot("../data/rapid_read_start_counts", "Klebsiella_oxytoca_MSB1_2C__plasmid_2", "#00989D", 4.067442842776381, expression(paste(italic("K. oxytoca"), " plasmid 2")), 58472)
+manhattan_plot("../data/rapid_read_start_counts", "Klebsiella_oxytoca_MSB1_2C__plasmid_3", "#00989D", 2.9542425094393248, expression(paste(italic("K. oxytoca"), " plasmid 3")), 4574)
+manhattan_plot("../data/rapid_read_start_counts", "Klebsiella_variicola_INF345__chromosome", "#00989D", 6.033721225732489, expression(paste(italic("K. variicola"), " chromosome")), 5417255)
+manhattan_plot("../data/rapid_read_start_counts", "Klebsiella_variicola_INF345__plasmid_1", "#00989D", 4.693726948923647, expression(paste(italic("K. variicola"), " plasmid 1")), 250980)
+manhattan_plot("../data/rapid_read_start_counts", "Klebsiella_variicola_INF345__plasmid_2", "#00989D", 4.476251796007033, expression(paste(italic("K. variicola"), " plasmid 2")), 243620)
+manhattan_plot("../data/rapid_read_start_counts", "Klebsiella_variicola_INF345__plasmid_3", "#00989D", 3.8020892578817325, expression(paste(italic("K. variicola"), " plasmid 3")), 31780)
+manhattan_plot("../data/rapid_read_start_counts", "Klebsiella_variicola_INF345__plasmid_4", "#00989D", 3.0569048513364727, expression(paste(italic("K. variicola"), " plasmid 4")), 5783)
+manhattan_plot("../data/rapid_read_start_counts", "Klebsiella_variicola_INF345__plasmid_5", "#00989D", 2.845098040014257, expression(paste(italic("K. variicola"), " plasmid 5")), 3514)
+manhattan_plot("../data/rapid_read_start_counts", "Serratia_marcescens_17-147-1671__chromosome", "#00989D", 6.0354377435390045, expression(paste(italic("S. marcescens"), " chromosome")), 5518076)
+manhattan_plot("../data/rapid_read_start_counts", "Serratia_marcescens_17-147-1671__plasmid_1", "#00989D", 4.392345155361204, expression(paste(italic("S. marcescens"), " plasmid 1")), 184477)
+manhattan_plot("../data/rapid_read_start_counts", "Serratia_marcescens_17-147-1671__plasmid_2", "#00989D", 4.45969397647797, expression(paste(italic("S. marcescens"), " plasmid 2")), 161385)
+manhattan_plot("../data/rapid_read_start_counts", "Serratia_marcescens_17-147-1671__plasmid_4", "#00989D", 2.57978359661681, expression(paste(italic("S. marcescens"), " plasmid 4")), 1934)
 ```
