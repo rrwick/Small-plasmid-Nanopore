@@ -22,7 +22,7 @@ The [`method.md`](method.md) file contains the commands I ran to conduct the ana
 
 ### Scripts
 
-The [`scripts`](scripts) directory contains Python scripts I wrote for the analysis: `align_reads.py`, `assign_reads.py`, `get_depths.py`, `get_gc.py` and `depth_and_gc.py`. See the header in each script for more information on how it works, and see the [`method.md`](method.md) file for how I used these to produce the data in the study.
+The [`scripts`](scripts) directory contains Python scripts I wrote for the analysis: `align_reads.py`, `assign_reads.py`, `depth_and_gc.py`, `get_depths.py`, `get_gc.py` and `read_start_counts.py`. See the header in each script for more information on how it works, and see the [`method.md`](method.md) file for how I used these to produce the data in the study.
 
 
 
