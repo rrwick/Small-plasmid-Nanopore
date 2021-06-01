@@ -59,33 +59,46 @@ G. Assemblies for the two technical replicates were reconciled with each other t
 
 
 
-<p align="center"><img src="Fig_S4_read_n50_by_barcode.png" alt="Figure S4" width="80%"></p>
+<p align="center"><img src="Fig_S4_read-start_Manhattan_plots.png" alt="Figure S4" width="80%"></p>
 
-**Figure S4**: the read N50 length for each demultiplexed read set in each of the four ONT sequencing runs.
+**Figure S4**: two-sided Manhattan plots for read-start density in each of the replicons from both library preparation types. Each point represents a 100-bp window in which the number of read-start events was quantified. A _p_-value was determined for each read-start count by comparing against a Poisson distribution with a mean equal to the replicon’s mean read-starts per window: for a window with _k_ read-starts and a Poisson with mean _λ_, if _k_ > _λ_ then _p_ = _P_(_X_ ≥ _k_) and if _k_ < _λ_ then _p_ = _P_(_X_ ≤ _k_). Points above the zero-line indicate more read-starts than expected from the Poisson distribution, and points below the zero-line indicate fewer read-starts than expected from the Poisson distribution. Dashed lines indicate Bonferroni-corrected _p_=0.05 levels, and points outside the dashed lines are statistically significant deviations from a Poisson distribution.
 
-<br><br><br><br>
+Ligation read sets showed more localised deviations from the Poisson distribution than rapid read sets, suggesting some parts of the sequence are more or less prone to breakage than others. This was especially true for the _Haemophilus_ M1C132_1 and _S. marcescens_ 17-147-1671 genomes.
 
-
-
-
-<p align="center"><img src="Fig_S5_read_identity_distributions.png" alt="Figure S5" width="80%"></p>
-
-**Figure S5**: read identity distributions for each of the four ONT sequencing runs. The dashed lines represent median read identity.
+Repetitive sequence regions were excluded from this analysis because they contained unreliable read alignments. _E. kobei_ plasmid 5 and _S. marcescens_ plasmid 3 were excluded because they contained multiple variants with different sequence lengths.
 
 <br><br><br><br>
 
 
 
 
-<p align="center"><img src="Fig_S6_translocation_speed_vs_time.png" alt="Figure S6" width="80%"></p>
+<p align="center"><img src="Fig_S5_read_n50_by_barcode.png" alt="Figure S5" width="80%"></p>
 
-**Figure S6**: pore translocation speed vs read time for the first 24 hours of each of the four ONT sequencing runs. Each dot represents a single read. The ligation 1 and rapid 1 runs were refueled with the EXP-FLP002 kit 18 hours into the run (dashed line).
+**Figure S5**: the read N50 length for each demultiplexed read set in each of the four ONT sequencing runs.
 
 <br><br><br><br>
 
 
 
 
-<p align="center"><img src="Fig_S7_read_identity_vs_time.png" alt="Figure S7" width="80%"></p>
+<p align="center"><img src="Fig_S6_read_identity_distributions.png" alt="Figure S6" width="80%"></p>
 
-**Figure S7**: read identity vs read time for the first 24 hours of each of the four ONT sequencing runs. Each dot represents a single read. The ligation 1 and rapid 1 runs were refueled with the EXP-FLP002 kit 18 hours into the run (dashed line).
+**Figure S6**: read identity distributions for each of the four ONT sequencing runs. The dashed lines represent median read identity.
+
+<br><br><br><br>
+
+
+
+
+<p align="center"><img src="Fig_S7_translocation_speed_vs_time.png" alt="Figure S7" width="80%"></p>
+
+**Figure S7**: pore translocation speed vs read time for the first 24 hours of each of the four ONT sequencing runs. Each dot represents a single read. The ligation 1 and rapid 1 runs were refueled with the EXP-FLP002 kit 18 hours into the run (dashed line).
+
+<br><br><br><br>
+
+
+
+
+<p align="center"><img src="Fig_S8_read_identity_vs_time.png" alt="Figure S8" width="80%"></p>
+
+**Figure S8**: read identity vs read time for the first 24 hours of each of the four ONT sequencing runs. Each dot represents a single read. The ligation 1 and rapid 1 runs were refueled with the EXP-FLP002 kit 18 hours into the run (dashed line).
