@@ -1363,6 +1363,20 @@ The doubling was to guard against the possibility that an interesting gene spann
 
 To check for AMR and resistance genes, I used [Kleborate](https://github.com/katholt/Kleborate):
 ```bash
-~/Programs/Kleborate/kleborate-runner.py --resistance -a *__*.fasta -o Kleborate_plasmid_results.txt
+kleborate --resistance -a *__*.fasta -o Kleborate_plasmid_results.txt
 ```
 I then manually edited the resulting file to remove duplicate hits.
+
+
+
+
+
+
+# Poisson-based read positions
+
+To test whether the positions where reads start was compatible with a Poisson process, I ran a script which tallied up the number of read-starts in each 100 bp window of each replicon and tested it against a Poisson distribution with a matching mean. These results were used to make my Manhattan-like plots in the supp figure.
+
+```bash
+~/small_plasmids/scripts/read_start_counts.py assemblies data/ligation_read_start_counts 100 data/tech_rep_*_ligation_reads.tsv.gz
+~/small_plasmids/scripts/read_start_counts.py assemblies data/rapid_read_start_counts 100 data/tech_rep_*_ligation_reads.tsv.gz
+```
