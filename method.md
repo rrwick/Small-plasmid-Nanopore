@@ -1361,12 +1361,20 @@ Serratia_marcescens_17-147-1671__184477.fasta  368954
 
 The doubling was to guard against the possibility that an interesting gene spanned the start/end junction (particularly a concern for small plasmids which have few genes). This means my gene search will usually report two copies of any interesting gene for each plasmids.
 
-To check for AMR and resistance genes, I used [Kleborate](https://github.com/katholt/Kleborate):
+To check for AMR genes, I used [Kleborate](https://github.com/katholt/Kleborate):
 ```bash
 kleborate --resistance -a *__*.fasta -o Kleborate_plasmid_results.txt
 ```
 I then manually edited the resulting file to remove duplicate hits.
 
+
+
+To look for virulence genes, I aligned the VFDB full dataset to the doubled plasmids, filtering for full length (>90% coverage) results:
+```bash
+minimap2 -c -x map-ont ../combined/all_plasmids_doubled.fasta VFDB_setA_nt.fas | awk '{if (($4 -$3)/$2 > 0.9) print $0;}' | sort -k6,6 -k8,8n > VFDB_setA_nt.paf
+minimap2 -c -x map-ont ../combined/all_plasmids_doubled.fasta VFDB_setB_nt.fas | awk '{if (($4 -$3)/$2 > 0.9) print $0;}' | sort -k6,6 -k8,8n > VFDB_setB_nt.paf
+```
+I then manually removed duplicate hits, choosing only the strongest match for each region of each plasmid. I also aligned the VFDB datasets to the plasmids using BLAST (in Bandage) to verify that I got the same results as from minimap2, and I did.
 
 
 
